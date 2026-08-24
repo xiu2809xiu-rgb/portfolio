@@ -7,6 +7,7 @@ import { Clock, Globe } from 'lucide-react';
 import { toast } from 'sonner';
 import { ALLOWED_DURATIONS } from '@/core/booking/domain/Duration';
 import { cn } from '@/lib/utils';
+import { AvailabilityUnavailable } from './AvailabilityUnavailable';
 import { Confirmation } from './Confirmation';
 import { DetailsForm, type BookingDetails } from './DetailsForm';
 import { MonthCalendar } from './MonthCalendar';
@@ -221,34 +222,41 @@ export function BookingFlow({ initialConfig, calendarLive }: BookingFlowProps) {
                 </p>
               </div>
 
-              <div className="grid gap-8 lg:grid-cols-2 lg:gap-10">
-                <MonthCalendar
-                  month={month}
-                  selected={effectiveDate}
-                  days={monthState.data?.days ?? []}
-                  loading={monthState.loading}
-                  timezone={ownerTimezone}
-                  onMonthChange={setMonth}
-                  onSelect={handleSelectDate}
+              {/*
+                When availability cannot be read, the calendar is replaced rather
+                than shown greyed out. A grid of dead dates with no explanation
+                looks broken; and guessing what is free would risk handing out a
+                slot that is already taken.
+              */}
+              {monthState.error && !monthState.loading ? (
+                <AvailabilityUnavailable
+                  message={monthState.error}
+                  onRetry={() => void loadMonth(month)}
                 />
-
-                <div className="lg:border-l lg:border-hairline lg:pl-10">
-                  <SlotPicker
-                    day={dayState.data}
-                    loading={dayState.loading}
-                    error={dayState.error}
-                    selectedStart={selectedSlot?.start ?? null}
-                    viewerTimezone={viewerTimezone}
-                    onSelect={handleSelectSlot}
+              ) : (
+                <div className="grid gap-8 lg:grid-cols-2 lg:gap-10">
+                  <MonthCalendar
+                    month={month}
+                    selected={effectiveDate}
+                    days={monthState.data?.days ?? []}
+                    loading={monthState.loading}
+                    timezone={ownerTimezone}
+                    onMonthChange={setMonth}
+                    onSelect={handleSelectDate}
                   />
-                </div>
-              </div>
 
-              {monthState.error ? (
-                <p className="mt-6 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive-foreground">
-                  {monthState.error}
-                </p>
-              ) : null}
+                  <div className="lg:border-l lg:border-hairline lg:pl-10">
+                    <SlotPicker
+                      day={dayState.data}
+                      loading={dayState.loading}
+                      error={dayState.error}
+                      selectedStart={selectedSlot?.start ?? null}
+                      viewerTimezone={viewerTimezone}
+                      onSelect={handleSelectSlot}
+                    />
+                  </div>
+                </div>
+              )}
 
               {!calendarLive ? (
                 <p className="mt-6 flex items-start gap-2 rounded-xl border border-warning/25 bg-warning/[0.07] p-3 text-xs leading-relaxed text-warning">

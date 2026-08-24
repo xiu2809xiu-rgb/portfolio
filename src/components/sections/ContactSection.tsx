@@ -3,6 +3,7 @@
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { ArrowUpRight, Download } from 'lucide-react';
+import { InViewMount } from '@/components/common/InViewMount';
 import { Reveal } from '@/components/common/Reveal';
 import { profile } from '@/content/profile';
 
@@ -13,19 +14,22 @@ const GridRise = dynamic(() => import('@/components/react-bits/grid-rise'), {
 export function ContactSection() {
   return (
     <section id="contact" className="relative scroll-mt-24 overflow-hidden py-24 md:py-32">
+      {/* Gated so its WebGL context only exists while the section is on screen. */}
       <div className="absolute inset-0 -z-10 opacity-45">
-        <GridRise
-          color="#0b0e13"
-          accent="#b4ff39"
-          background="#05070a"
-          cellSize={0.42}
-          gap={0.08}
-          amplitude={0.22}
-          accentStrength={0.7}
-          speed={0.25}
-          maxFps={40}
-          haze={0.35}
-        />
+        <InViewMount rootMargin="200px">
+          <GridRise
+            color="#0b0e13"
+            accent="#b4ff39"
+            background="#05070a"
+            cellSize={0.42}
+            gap={0.08}
+            amplitude={0.22}
+            accentStrength={0.7}
+            speed={0.25}
+            maxFps={40}
+            haze={0.35}
+          />
+        </InViewMount>
       </div>
       <div className="absolute inset-0 -z-10 bg-gradient-to-b from-[#05070a] via-transparent to-[#05070a]" />
 

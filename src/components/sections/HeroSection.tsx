@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { ArrowRight, ArrowUpRight, Download } from 'lucide-react';
 import { motion } from 'motion/react';
+import { InViewMount } from '@/components/common/InViewMount';
 import StaggeredText from '@/components/react-bits/staggered-text';
 import { heroRotation, profile } from '@/content/profile';
 import { RotatingWord } from './RotatingWord';
@@ -30,20 +31,23 @@ export function HeroSection() {
       className="relative flex min-h-[100svh] items-center overflow-hidden pt-24 md:pt-28"
     >
       <div className="absolute inset-0 -z-10">
-        <AuroraBeam
-          color="#b4ff39"
-          midColor="#39ffd8"
-          deepColor="#0b1f14"
-          backgroundColor="#05070a"
-          speed={0.35}
-          sheets={3}
-          amplitude={0.5}
-          opacity={0.55}
-          grain={0.06}
-          adaptiveQuality
-          targetFps={45}
-          className="size-full"
-        />
+        {/* Unmounts once the hero scrolls away, freeing its WebGL context. */}
+        <InViewMount rootMargin="200px">
+          <AuroraBeam
+            color="#b4ff39"
+            midColor="#39ffd8"
+            deepColor="#0b1f14"
+            backgroundColor="#05070a"
+            speed={0.35}
+            sheets={3}
+            amplitude={0.5}
+            opacity={0.55}
+            grain={0.06}
+            adaptiveQuality
+            targetFps={45}
+            className="size-full"
+          />
+        </InViewMount>
         {/* Keeps the headline readable wherever the aurora happens to be bright. */}
         <div className="absolute inset-0 bg-gradient-to-b from-[#05070a]/40 via-[#05070a]/55 to-[#05070a]" />
       </div>

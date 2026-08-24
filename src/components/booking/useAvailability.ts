@@ -1,7 +1,28 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { DayResponse, MonthResponse } from './types';
+import type { ApiError, DayResponse, MonthResponse } from './types';
+
+/**
+ * Turns a failed response into something a visitor can act on.
+ *
+ * Never surfaces the upstream text verbatim — Google returns strings like
+ * "invalid_grant", which mean nothing to a visitor and leak how the integration
+ * is wired. The owner still gets the real reason from the server logs and
+ * /api/health.
+ */
+async function readError(response: Response): Promise<string> {
+  try {
+    const body = (await response.json()) as ApiError;
+    if (body.error === 'calendar_unavailable') {
+      return "I can't reach my calendar right now, so I can't show what's free. Try again in a minute, or just email me.";
+    }
+    if (body.error === 'rate_limited') return body.message;
+  } catch {
+    /* fall through to the generic message */
+  }
+  return 'Could not load availability. Please try again.';
+}
 
 interface AvailabilityState<T> {
   data: T | null;
@@ -46,11 +67,18 @@ export function useAvailability(duration: number) {
           `/api/availability?month=${monthISO}&duration=${duration}`,
           { signal: controller.signal, cache: 'no-store' },
         );
-        if (!response.ok) throw new Error(`Availability request failed (${response.status})`);
+        if (!response.ok) {
+          setMonth({ data: null, loading: false, error: await readError(response) });
+          return;
+        }
         setMonth({ data: (await response.json()) as MonthResponse, loading: false, error: null });
       } catch (error) {
         if ((error as Error).name === 'AbortError') return;
-        setMonth({ data: null, loading: false, error: 'Could not load the calendar.' });
+        setMonth({
+          data: null,
+          loading: false,
+          error: 'Could not reach the server. Check your connection and try again.',
+        });
       }
     },
     [duration],
@@ -69,11 +97,18 @@ export function useAvailability(duration: number) {
           signal: controller.signal,
           cache: 'no-store',
         });
-        if (!response.ok) throw new Error(`Availability request failed (${response.status})`);
+        if (!response.ok) {
+          setDay({ data: null, loading: false, error: await readError(response) });
+          return;
+        }
         setDay({ data: (await response.json()) as DayResponse, loading: false, error: null });
       } catch (error) {
         if ((error as Error).name === 'AbortError') return;
-        setDay({ data: null, loading: false, error: 'Could not load times for that day.' });
+        setDay({
+          data: null,
+          loading: false,
+          error: 'Could not reach the server. Check your connection and try again.',
+        });
       }
     },
     [duration],
