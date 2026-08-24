@@ -11,6 +11,12 @@ interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
+/**
+ * Every slug is known at build time, so the route is fully static and an
+ * unknown slug 404s from the edge instead of waking a function to say no.
+ */
+export const dynamicParams = false;
+
 export async function generateStaticParams() {
   const posts = await getPosts();
   return posts.map((post) => ({ slug: post.slug }));

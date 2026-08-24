@@ -12,7 +12,12 @@ interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
-/** Both case studies are known at build time, so they prerender as static HTML. */
+/**
+ * Every slug is known at build time, so the route is fully static and an
+ * unknown slug 404s from the edge instead of waking a function to say no.
+ */
+export const dynamicParams = false;
+
 export function generateStaticParams() {
   return projects.map((project) => ({ slug: project.slug }));
 }
