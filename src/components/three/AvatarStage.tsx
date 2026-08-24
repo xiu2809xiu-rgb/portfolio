@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { ContactShadows, Environment, PerspectiveCamera } from '@react-three/drei';
+import { Pause, Play } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AVATAR_CLIPS, DEFAULT_CLIP } from './avatarClips';
 import { AvatarModel } from './AvatarModel';
@@ -26,6 +27,8 @@ export function AvatarStage({ className, controls = true }: AvatarStageProps) {
   const [visible, setVisible] = useState(false);
   const [clip, setClip] = useState(DEFAULT_CLIP.track);
   const [failed, setFailed] = useState(false);
+  /** Cycles through the clips until someone picks one by hand. */
+  const [autoplay, setAutoplay] = useState(true);
 
   /**
    * Cheap WebGL probe — cheaper than mounting a Canvas and catching its throw.
@@ -58,6 +61,36 @@ export function AvatarStage({ className, controls = true }: AvatarStageProps) {
     observer.observe(node);
     return () => observer.disconnect();
   }, []);
+
+  /**
+   * Advance to the next clip when the current one has had time to play through.
+   *
+   * Each clip gets its own duration from `avatarClips.ts` rather than a fixed
+   * interval, so a 3-second wave is not held on screen as long as a 12-second
+   * dance. Paused while off-screen so a backgrounded tab is not cycling a rig
+   * nobody is watching.
+   */
+  useEffect(() => {
+    if (!autoplay || !visible || failed) return;
+
+    const current = AVATAR_CLIPS.find((item) => item.track === clip) ?? DEFAULT_CLIP;
+    // A beat on top of the clip length so it lands before cutting away.
+    const holdMs = (current.seconds + 0.6) * 1000;
+
+    const timer = setTimeout(() => {
+      const index = AVATAR_CLIPS.findIndex((item) => item.track === clip);
+      const next = AVATAR_CLIPS[(index + 1) % AVATAR_CLIPS.length];
+      setClip(next.track);
+    }, holdMs);
+
+    return () => clearTimeout(timer);
+  }, [autoplay, visible, failed, clip]);
+
+  /** A manual pick takes over — nobody wants the demo reel fighting their choice. */
+  const selectClip = (track: string) => {
+    setAutoplay(false);
+    setClip(track);
+  };
 
   const usable = supported && !failed;
 
@@ -128,15 +161,31 @@ export function AvatarStage({ className, controls = true }: AvatarStageProps) {
 
       {controls && usable ? (
         <div
-          className="flex max-w-[22rem] flex-wrap justify-center gap-1.5 sm:max-w-sm"
+          className="flex max-w-[22rem] flex-wrap items-center justify-center gap-1.5 sm:max-w-sm"
           role="group"
           aria-label="Avatar animation"
         >
+          <button
+            type="button"
+            onClick={() => setAutoplay((value) => !value)}
+            aria-pressed={autoplay}
+            title={autoplay ? 'Stop cycling through animations' : 'Cycle through animations'}
+            className={cn(
+              'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-mono text-[0.65rem] uppercase tracking-widest transition-all',
+              autoplay
+                ? 'border-lime/50 bg-lime/12 text-lime'
+                : 'border-hairline text-muted-foreground hover:border-lime/30 hover:text-foreground',
+            )}
+          >
+            {autoplay ? <Pause className="size-3" /> : <Play className="size-3" />}
+            Auto
+          </button>
+
           {AVATAR_CLIPS.map((item) => (
             <button
               key={item.track}
               type="button"
-              onClick={() => setClip(item.track)}
+              onClick={() => selectClip(item.track)}
               aria-pressed={clip === item.track}
               className={cn(
                 'rounded-full border px-3 py-1.5 font-mono text-[0.65rem] uppercase tracking-widest transition-all',

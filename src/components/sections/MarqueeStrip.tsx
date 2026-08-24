@@ -23,7 +23,7 @@ export function MarqueeStrip() {
       <BendingMarquee
         items={[...marqueeTerms]}
         separator="✦"
-        speed={0.55}
+        speed={0.16}
         bend={14}
         rows={1}
         fontSize={26}
