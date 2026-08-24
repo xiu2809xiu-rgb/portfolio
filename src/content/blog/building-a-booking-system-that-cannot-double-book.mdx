@@ -1,0 +1,106 @@
+---
+title: Building a booking system that cannot double-book
+description: Two people click the same 10:00 slot half a second apart. Only one should get it. Here is how I made that guarantee hold.
+date: 2026-08-18
+tags: [architecture, typescript, scheduling]
+---
+
+The booking page on this site looks simple: pick a length, pick a slot, done. The
+interesting part is the failure everyone forgets to design for — **two people
+choosing the same slot at almost the same moment**.
+
+It is easy to write a version that is wrong in a way you will not notice for months.
+
+## The version that looks correct
+
+```typescript
+const slots = await getAvailableSlots(date);
+// ... user picks one, fills in a form, submits ...
+await calendar.createEvent(chosenSlot);
+```
+
+The bug is the gap between reading availability and writing the booking. A visitor
+sees the grid, spends ninety seconds typing their email, and submits. In those
+ninety seconds someone else can take the slot. Nothing in that code notices.
+
+The fix is a rule I now apply everywhere: **anything you showed the user is stale
+by the time they act on it**. Availability is a hint for the UI, never a
+permission slip.
+
+## Re-check on the server, at submit time
+
+Every booking request re-derives availability from scratch before it writes
+anything:
+
+```typescript
+const { ok, state } = await this.availability.isBookable(slot);
+if (!ok) {
+  if (state === 'busy') throw new SlotAlreadyBookedError();
+  throw new SlotUnavailableError('That slot is no longer available.');
+}
+```
+
+The client's opinion about what was free is never trusted. Neither is the client's
+idea of when the session *ends* — that is derived from the duration, so nobody can
+post a fifteen-minute booking that quietly occupies three hours.
+
+## Claim the slot before calling the calendar
+
+Order matters more than people expect. The obvious sequence — create the calendar
+event, then save the row — is the wrong way round:
+
+```typescript
+// Claim the slot first. A concurrent request loses the race here,
+// not on the calendar, where two events for one slot would be far worse.
+await this.repository.save(booking);
+
+try {
+  const { eventId } = await this.calendar.createEvent(booking);
+  booking.attachCalendarEvent(eventId);
+  await this.repository.save(booking);
+} catch (error) {
+  await this.repository.markCancelled(booking.reference).catch(() => undefined);
+  throw error;
+}
+```
+
+Writing the row first means the loser of a race fails on a cheap local write
+instead of after a slow network call to Google. And if the calendar call fails,
+the row is rolled back — so the site never shows a confirmation for a session that
+does not exist.
+
+## Half-open intervals, or back-to-back bookings break
+
+This is the detail that bites everyone once:
+
+```typescript
+overlaps(other: TimeSlot): boolean {
+  return this.start < other.end && other.start < this.end;
+}
+```
+
+Strictly less-than on both sides. If you use `<=`, a 10:00–10:30 booking collides
+with 10:30–11:00 and you can never book two sessions in a row. Treating every
+interval as `[start, end)` makes back-to-back slots work and keeps genuine
+overlaps caught.
+
+## Store instants, render zones
+
+All times are stored as UTC instants. Timezones are strictly a presentation
+concern, applied at the edges:
+
+```typescript
+slot.start.setZone(viewerTimezone).toFormat('h:mm a')
+```
+
+Doing the comparison in local wall-clock time is how you get bugs that only appear
+twice a year, when the clocks change, and only for some of your users.
+
+## What this bought
+
+The booking flow now has three independent guards: the grid will not offer a busy
+slot, the server re-checks before writing, and the write itself is the thing that
+claims the slot. Any one of them failing still leaves two more.
+
+That is the shape of most reliability work — not one clever mechanism, but
+several boring ones that fail independently.

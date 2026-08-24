@@ -1,0 +1,38 @@
+@layer theme, base, components;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css";
+@source "./index.tsx";
+
+/* One @source per imported library component so Tailwind scans each part's own
+   built-in utility classes into this section's CSS chunk. The demo also
+   passes some sizing/tone utilities to these parts from index.tsx, which are
+   scanned by the line above regardless. */
+@source "../../parallax-layers/index.tsx";
+@source "../../../lib/velocity-dashboard-shot.tsx";
+
+.velocity-hero {
+  --motion-ui-transition-snap: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-ui-transition-snap-duration: 0.15s;
+
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+.velocity-hero-title {
+  font-variation-settings: "opsz" 60, "wght" 700;
+}
+
+.velocity-hero-sub {
+  font-variation-settings: "opsz" 14, "wght" 470;
+}
+
+.velocity-dashboard-shadow {
+  opacity: 0.14;
+  background: var(--foreground);
+  filter: blur(56px);
+}@media (max-width: 600px) {
+  .velocity-dashboard-frame {
+    width: 145%;
+  }
+}

@@ -1,0 +1,75 @@
+---
+title: What a ticketing system taught me about validation
+description: My first real Flask project had a form. I thought validation was the boring part. It was where every interesting failure lived.
+date: 2026-06-30
+tags: [flask, python, ux]
+---
+
+For my Web Development Project module I built a customer ticketing system —
+submission forms, an admin dashboard, file uploads, the lot. I assumed the
+interesting work would be the dashboard. It was not. It was the form.
+
+## Client-side validation is a courtesy, not a control
+
+My first version relied on HTML attributes:
+
+```html
+<input name="subject" required minlength="5">
+```
+
+That is genuinely useful — it gives instant feedback without a round trip. It is
+also trivially bypassed. Anyone with dev tools open, any script posting directly
+to the endpoint, and every one of those constraints evaporates.
+
+So the same rules live on the server, where they are actually enforced:
+
+```python
+subject = request.form.get('subject', '').strip()
+
+if not subject or len(subject) < 5:
+    flash('Subject must be at least 5 characters.', 'error')
+    return redirect(url_for('tickets.create_ticket'))
+```
+
+Note the `.strip()`. Without it, five spaces is a valid subject line. I learned
+that from a classmate who tested my form by mashing the space bar.
+
+## Error messages are part of the product
+
+My first messages were the ones the framework gave me: *"Invalid input."* Invalid
+how? Which field? What should the user do?
+
+Rewriting them to say what to do next — *"Subject must be at least 5 characters"*
+rather than *"Invalid subject"* — measurably reduced the number of people who
+abandoned the form during testing. That is a UX change disguised as an error
+string.
+
+The rule I use now: an error message should let someone fix the problem without
+guessing.
+
+## Preserve what they typed
+
+The failure that annoyed my testers most was not rejection — it was rejection that
+wiped a paragraph of carefully typed description because the subject was too
+short. Re-render the form with their input intact. Losing someone's work to
+enforce a rule about a different field is not validation, it is punishment.
+
+## Validate at the boundary, then trust inwards
+
+The pattern I keep coming back to, and now use in TypeScript as much as Python:
+check everything at the edge, and let the inside of the system assume the data is
+sound. If a `Ticket` object exists, its subject is valid — because it could not
+have been constructed otherwise.
+
+That stops validation logic being smeared across every function that touches the
+data, which is how you end up with the same length check written four slightly
+different ways.
+
+## Where it landed
+
+The finished system reduced manual support handling by around 60% in our testing
+scenario. Almost none of that came from the dashboard I was excited about. It came
+from the intake form collecting the right information, correctly, the first time —
+so tickets arrived actionable instead of needing a follow-up question.
+
+The unglamorous part was the part that mattered.

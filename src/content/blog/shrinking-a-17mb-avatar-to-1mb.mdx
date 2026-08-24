@@ -1,0 +1,100 @@
+---
+title: Shrinking a 17 MB avatar down to 1.2 MB
+description: My 3D model was 17 MB and would have melted phones. Finding out why took one command; fixing it took a 40-line script.
+date: 2026-08-22
+tags: [3d, performance, webgl]
+---
+
+I had a rigged 3D model of myself generated from photos, and I wanted it in the
+hero of this site. The file was **17 MB**. That is not a hero asset — that is a
+reason to close the tab.
+
+## Measure before you optimise
+
+The instinct is to reach for mesh compression. That would have been wrong. One
+command told me why:
+
+```bash
+npx @gltf-transform/cli inspect avatar.glb
+```
+
+| Asset | Size | Resolution |
+| --- | --- | --- |
+| Mesh (11,379 vertices) | 648 KB | — |
+| Normal map | 887 KB | 4096 × 4096 |
+| Base colour | 2.83 MB | 4096 × 4096 |
+| Metallic-roughness | **12.24 MB** | 4096 × 4096 |
+
+The geometry was already small. A single 4K **PNG** metallic-roughness map was
+72% of the file on its own — and each 4K texture costs about 90 MB of VRAM once
+uploaded. Three of them meant roughly **268 MB of GPU memory** for one character
+that occupies a corner of the screen.
+
+Compressing the mesh would have saved a few hundred kilobytes and solved nothing.
+
+## Different maps deserve different budgets
+
+The key realisation: these three textures are not equally important. Base colour
+is what people actually see. Roughness data is low-frequency and forgiving —
+nobody has ever noticed a slightly soft specular response.
+
+```javascript
+const SLOT_RULES = [
+  { match: /basecolor|albedo/i, size: 1024, quality: 84 },
+  { match: /normal/i,           size: 1024, quality: 80 },
+  { match: /_rm$|roughness/i,   size: 512,  quality: 72 },
+];
+```
+
+Then resize, re-encode to WebP, and write it back:
+
+```javascript
+const out = await sharp(Buffer.from(tex.getImage()), { failOn: 'none' })
+  .toColourspace('srgb')
+  .resize(rule.size, rule.size, { fit: 'fill' })
+  .webp({ quality: rule.quality, effort: 6 })
+  .toBuffer();
+
+tex.setImage(new Uint8Array(out)).setMimeType('image/webp');
+```
+
+That `failOn: 'none'` is not decoration. The gltf-transform CLI's own `resize`
+command crashed on this asset with a libvips colourspace assertion, which is why
+I ended up writing the pass by hand instead of chaining CLI commands.
+
+## Results
+
+| | Before | After |
+| --- | --- | --- |
+| File size | 16.36 MB | **1.24 MB** |
+| Base colour | 2.70 MB | 0.11 MB |
+| Metallic-roughness | 11.67 MB | 0.03 MB |
+| Animations | 7 clips | 7 clips |
+
+**92.4% smaller**, with all seven animation clips intact.
+
+The compression ratio looks implausible until you see the texture atlas: the
+generator bakes large flat regions of colour, which is close to the best case for
+WebP. Your mileage will differ with a hand-painted texture.
+
+## The bug that cost me longer than the compression
+
+With the model loading fast, it rendered — frozen in a perfect T-pose. The mixer
+was running. The clips existed. Nothing moved.
+
+The cause was one line I had written on autopilot:
+
+```javascript
+const model = scene.clone(true); // ← this is the bug
+```
+
+`Object3D.clone()` does not rebind a `SkinnedMesh` to the cloned skeleton. The
+clone renders in its bind pose forever while the animation mixer cheerfully
+animates bones that nothing is listening to. Either use `SkeletonUtils.clone()`,
+or — if you only mount the model once — do not clone at all.
+
+## What I would tell past me
+
+Profile first. I nearly spent an afternoon on Draco compression for a mesh that
+was 4% of the problem, when the actual fix was noticing that a roughness map does
+not need to be 4096 pixels wide.
