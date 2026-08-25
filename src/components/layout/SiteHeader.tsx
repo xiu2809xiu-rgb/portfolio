@@ -6,6 +6,8 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Menu, X } from 'lucide-react';
 import { primaryNav } from '@/content/navigation';
 import { profile } from '@/content/profile';
+import { useAudio } from './AudioProvider';
+import { RebootSequence } from './RebootSequence';
 import { cn } from '@/lib/utils';
 
 /**
@@ -20,7 +22,11 @@ export function SiteHeader({ commandPalette }: { commandPalette?: ReactNode }) {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<string | null>(null);
+  const [rebooting, setRebooting] = useState(false);
+  // Bumped per run so RebootSequence remounts with fresh state.
+  const [rebootRun, setRebootRun] = useState(0);
   const pathname = usePathname();
+  const { sfxEnabled } = useAudio();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -92,6 +98,13 @@ export function SiteHeader({ commandPalette }: { commandPalette?: ReactNode }) {
 
   return (
     <>
+      <RebootSequence
+        key={rebootRun}
+        open={rebooting}
+        onClose={() => setRebooting(false)}
+        soundEnabled={sfxEnabled}
+      />
+
       <header
         className={cn(
           'fixed inset-x-0 top-0 z-50 transition-all duration-500',
@@ -101,13 +114,33 @@ export function SiteHeader({ commandPalette }: { commandPalette?: ReactNode }) {
         )}
       >
         <nav className="wrap flex h-16 items-center justify-between gap-4 md:h-20">
-          <Link
-            href="/"
-            className="font-heading text-sm font-extrabold tracking-tight text-foreground md:text-base"
-            aria-label={`${profile.fullName} — home`}
-          >
-            RICHIE<span className="text-lime">.</span>KOH
-          </Link>
+          {/*
+            On the home page the wordmark has nowhere to navigate, so it runs the
+            reboot sequence instead of being a link to the page you are on.
+            Everywhere else it stays an ordinary link home — hijacking navigation
+            for an animation would be worse than not having one.
+          */}
+          {pathname === '/' ? (
+            <button
+              type="button"
+              onClick={() => {
+                setRebootRun((run) => run + 1);
+                setRebooting(true);
+              }}
+              className="group font-heading text-sm font-extrabold tracking-tight text-foreground transition-opacity hover:opacity-80 md:text-base"
+              title="Rebuild the site"
+            >
+              RICHIE<span className="text-lime group-hover:animate-pulse">.</span>KOH
+            </button>
+          ) : (
+            <Link
+              href="/"
+              className="font-heading text-sm font-extrabold tracking-tight text-foreground md:text-base"
+              aria-label={`${profile.fullName} — home`}
+            >
+              RICHIE<span className="text-lime">.</span>KOH
+            </Link>
+          )}
 
           <ul className="hidden items-center gap-7 lg:flex">
             {primaryNav.map((item) => (

@@ -120,7 +120,8 @@ const ParticleText: React.FC<ParticleTextProps> = ({
         A later resize callback re-runs this with real dimensions.
       */
       if (canvas.width < 1 || canvas.height < 1) {
-        particlesRef.current = [];
+        // Keep whatever was last built. Clearing here made the wordmark blink
+        // out whenever a transient zero-size layout pass hit the observer.
         return;
       }
 
@@ -166,10 +167,11 @@ const ParticleText: React.FC<ParticleTextProps> = ({
               settled once it rounds to the same device pixel — so on a retina
               screen a full-canvas scatter takes several seconds to resolve into
               readable letters, which is far too long for a hero element. A small
-              local jitter keeps the assemble-in effect and lands it in under a
-              second at any pixel ratio.
+              local jitter keeps a brief assemble-in shimmer while leaving the
+              word readable almost immediately — which matters because the
+              reboot sequence it appears in only runs for about three seconds.
             */
-            const scatter = 48 * dpr;
+            const scatter = 12 * dpr;
             newParticles.push({
               x: x + (Math.random() - 0.5) * scatter,
               y: y + (Math.random() - 0.5) * scatter,
