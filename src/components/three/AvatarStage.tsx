@@ -4,6 +4,7 @@ import { Suspense, useEffect, useRef, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { ContactShadows, Environment, PerspectiveCamera } from '@react-three/drei';
 import { Pause, Play } from 'lucide-react';
+import * as THREE from 'three';
 import { cn } from '@/lib/utils';
 import { AVATAR_CLIPS, DEFAULT_CLIP } from './avatarClips';
 import { AvatarModel } from './AvatarModel';
@@ -108,30 +109,57 @@ export function AvatarStage({ className, controls = true }: AvatarStageProps) {
 
         {usable && visible ? (
           <Canvas
-            dpr={[1, 1.75]}
+            /*
+              Full retina. The avatar is the centrepiece and sits in a ~350px
+              box, so the extra pixels cost little and are the difference between
+              crisp and soft on a high-DPI screen.
+            */
+            dpr={[1, 2]}
+            shadows="soft"
             frameloop={visible ? 'always' : 'demand'}
-            gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
+            gl={{
+              antialias: true,
+              alpha: true,
+              powerPreference: 'high-performance',
+              // ACES filmic keeps the lime rim light from clipping to white where
+              // it hits the shoulders, and holds detail in the dark trousers.
+              toneMapping: THREE.ACESFilmicToneMapping,
+              toneMappingExposure: 1.15,
+            }}
             onCreated={({ gl }) => gl.setClearAlpha(0)}
             onError={() => setFailed(true)}
             className="!absolute inset-0"
           >
             <PerspectiveCamera makeDefault position={[0, 0.15, 3.1]} fov={38} />
 
-            <ambientLight intensity={0.7} />
-            <directionalLight position={[3, 4, 3]} intensity={1.6} castShadow />
-            {/* Lime rim light from behind-left ties the model to the palette. */}
-            <directionalLight position={[-3, 2, -2]} intensity={1.1} color="#b4ff39" />
-            <directionalLight position={[2, 1, -3]} intensity={0.5} color="#39ffd8" />
+            <ambientLight intensity={0.55} />
+            <directionalLight
+              position={[3, 4, 3]}
+              intensity={2.1}
+              castShadow
+              shadow-mapSize={[2048, 2048]}
+              shadow-bias={-0.0005}
+            />
+            {/* Rim lights, kept low and placed behind the shoulders rather than
+                above: aimed higher they wash the top of the hair green instead of
+                just catching the silhouette edge. */}
+            <directionalLight position={[-3, 0.4, -2.5]} intensity={0.75} color="#b4ff39" />
+            <directionalLight position={[2.5, 0.2, -3]} intensity={0.4} color="#39ffd8" />
+            {/* Soft fill under the chin so the face is not lost in shadow. */}
+            <directionalLight position={[0, -1.5, 2]} intensity={0.35} color="#ffffff" />
 
             <Suspense fallback={null}>
               <AvatarModel clip={clip} />
-              <Environment preset="city" />
+              {/* `studio` has broader, softer sources than `city`, which reads
+                  better on skin than city's hard window reflections. */}
+              <Environment preset="studio" environmentIntensity={0.55} />
               <ContactShadows
                 position={[0, -1.35, 0]}
-                opacity={0.42}
+                opacity={0.5}
                 scale={7}
-                blur={2.6}
+                blur={2.4}
                 far={2}
+                resolution={1024}
                 color="#000000"
               />
             </Suspense>
