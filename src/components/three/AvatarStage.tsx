@@ -8,6 +8,7 @@ import * as THREE from 'three';
 import { cn } from '@/lib/utils';
 import { AVATAR_CLIPS, DEFAULT_CLIP } from './avatarClips';
 import { AvatarModel } from './AvatarModel';
+import { AvatarParticleName } from './AvatarParticleName';
 
 interface AvatarStageProps {
   className?: string;
@@ -182,10 +183,14 @@ export function AvatarStage({ className, controls = true }: AvatarStageProps) {
           </div>
         ) : null}
 
-        <div className="pointer-events-none absolute left-4 top-4 rounded-full border border-hairline bg-black/40 px-2.5 py-1 font-mono text-[0.6rem] uppercase tracking-widest text-muted-foreground backdrop-blur">
+        {/* Bottom-left: the thought bubble sits top-centre and was colliding here. */}
+        <div className="pointer-events-none absolute bottom-4 left-4 rounded-full border border-hairline bg-black/40 px-2.5 py-1 font-mono text-[0.6rem] uppercase tracking-widest text-muted-foreground backdrop-blur">
           avatar.glb
         </div>
       </div>
+
+      {/* Particle wordmark, sitting between the model and its clip switcher. */}
+      <AvatarParticleName className="-mt-2" />
 
       {controls && usable ? (
         <div

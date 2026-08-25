@@ -5,6 +5,8 @@ import { Crimson_Pro, Outfit, Space_Mono } from 'next/font/google';
 import { Toaster } from '@/components/ui/sonner';
 import { SiteFooter } from '@/components/layout/SiteFooter';
 import { SiteHeader } from '@/components/layout/SiteHeader';
+import { AudioControl } from '@/components/layout/AudioControl';
+import { AudioProvider } from '@/components/layout/AudioProvider';
 import { CommandPalette } from '@/components/layout/CommandPalette';
 import { CursorLayer } from '@/components/layout/CursorLayer';
 import { EntrySequence, introGuardScript } from '@/components/layout/EntrySequence';
@@ -140,6 +142,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           Skip to content
         </a>
 
+        <AudioProvider>
         <EntrySequence />
         <ScrollProgress />
         <CursorLayer />
@@ -165,6 +168,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         </main>
 
         <SiteFooter />
+        <AudioControl />
+        </AudioProvider>
         <Toaster position="bottom-right" richColors closeButton />
         <Analytics />
         <SpeedInsights />

@@ -23,7 +23,13 @@ export function MarqueeStrip() {
       <BendingMarquee
         items={[...marqueeTerms]}
         separator="✦"
-        speed={0.16}
+        /*
+          `speed` is the loop DURATION in seconds, not a rate — higher is slower.
+          The component's own default is 16. Anything below 1 makes the strip
+          complete a full cycle several times a second, which is why the earlier
+          "reductions" to 0.55 and 0.16 kept making it faster.
+        */
+        speed={60}
         bend={14}
         rows={1}
         fontSize={26}

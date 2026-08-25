@@ -33,6 +33,22 @@ export const profile: Profile = {
   ],
 };
 
+/**
+ * Thought bubbles that appear above the 3D avatar's head.
+ *
+ * Keep them short — the bubble is anchored to a moving head, so anything past
+ * roughly six words wraps to three lines and starts covering the model. Written
+ * in first person, because it is the avatar saying them.
+ */
+export const avatarThoughts = [
+  'Open to internships 👀',
+  'Ask me about Flask',
+  'Currently learning Three.js',
+  'This site is open source',
+  'Drag the badge below ↓',
+  'Built this from scratch',
+] as const;
+
 /** Rotating words in the hero sub-headline. */
 export const heroRotation = [
   'scalable solutions',

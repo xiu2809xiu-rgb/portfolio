@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useAnimations, useGLTF } from '@react-three/drei';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
+import { AvatarThought } from './AvatarThought';
 
 const MODEL_URL = '/models/avatar.glb';
 
@@ -12,6 +13,8 @@ interface AvatarModelProps {
   clip: string;
   /** How strongly the head/torso follows the pointer. 0 disables it. */
   lookStrength?: number;
+  /** Show the speech bubble anchored to the head bone. */
+  thoughts?: boolean;
 }
 
 /**
@@ -25,7 +28,7 @@ interface AvatarModelProps {
  * 2. The whole rig is nudged toward the pointer with a damped lerp, which reads
  *    as the avatar noticing you without fighting whichever clip is playing.
  */
-export function AvatarModel({ clip, lookStrength = 0.18 }: AvatarModelProps) {
+export function AvatarModel({ clip, lookStrength = 0.18, thoughts = true }: AvatarModelProps) {
   const group = useRef<THREE.Group>(null);
   const { scene, animations } = useGLTF(MODEL_URL);
   const { actions, mixer } = useAnimations(animations, group);
@@ -98,6 +101,18 @@ export function AvatarModel({ clip, lookStrength = 0.18 }: AvatarModelProps) {
     [mixer],
   );
 
+  /**
+   * The rig's head bone, used to anchor the thought bubble.
+   *
+   * Looked up by name from the Tripo skeleton, which labels it `Head`. Falling
+   * back to `NeckTwist02` covers a re-export that renames the joint — better a
+   * bubble anchored slightly low than no bubble at all.
+   */
+  const head = useMemo(
+    () => scene.getObjectByName('Head') ?? scene.getObjectByName('NeckTwist02') ?? null,
+    [scene],
+  );
+
   const target = useRef({ x: 0, y: 0 });
 
   useFrame((state, delta) => {
@@ -128,6 +143,7 @@ export function AvatarModel({ clip, lookStrength = 0.18 }: AvatarModelProps) {
   return (
     <group ref={group} dispose={null}>
       <primitive object={model} scale={scale} position={[0, -scale * 0.52, 0]} />
+      {thoughts ? <AvatarThought head={head} /> : null}
     </group>
   );
 }
