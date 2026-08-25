@@ -1,11 +1,17 @@
 import type { Metadata, Viewport } from 'next';
+import { Analytics } from '@vercel/analytics/next';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Crimson_Pro, Outfit, Space_Mono } from 'next/font/google';
 import { Toaster } from '@/components/ui/sonner';
 import { SiteFooter } from '@/components/layout/SiteFooter';
 import { SiteHeader } from '@/components/layout/SiteHeader';
+import { CommandPalette } from '@/components/layout/CommandPalette';
 import { CursorLayer } from '@/components/layout/CursorLayer';
+import { EntrySequence, introGuardScript } from '@/components/layout/EntrySequence';
 import { ScrollProgress } from '@/components/layout/ScrollProgress';
 import { profile } from '@/content/profile';
+import { projects } from '@/content/projects';
+import { getPosts } from '@/lib/blog';
 import { siteConfig, siteUrl } from '@/lib/site';
 import './globals.css';
 
@@ -41,7 +47,6 @@ export const metadata: Metadata = {
   keywords: [...siteConfig.keywords],
   authors: [{ name: profile.legalName, url: siteUrl }],
   creator: profile.legalName,
-  alternates: { canonical: '/' },
   openGraph: {
     type: 'website',
     locale: siteConfig.locale,
@@ -70,6 +75,10 @@ export const metadata: Metadata = {
     apple: '/apple-icon.png',
   },
   manifest: '/manifest.webmanifest',
+  alternates: {
+    canonical: '/',
+    types: { 'application/rss+xml': [{ url: '/blog/rss.xml', title: `${profile.fullName} — Writing` }] },
+  },
 };
 
 export const viewport: Viewport = {
@@ -96,13 +105,19 @@ const personSchema = {
   sameAs: profile.socials.filter((social) => social.external).map((social) => social.href),
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // Loaded on the server so the palette has its corpus before it ever opens.
+  const posts = await getPosts();
   return (
     <html
       lang="en"
       className={`dark ${outfit.variable} ${spaceMono.variable} ${crimson.variable}`}
       suppressHydrationWarning
     >
+      <head>
+        {/* Must run before first paint — see EntrySequence. */}
+        <script dangerouslySetInnerHTML={{ __html: introGuardScript }} />
+      </head>
       <body className="grain min-h-dvh bg-background text-foreground antialiased">
         <script
           type="application/ld+json"
@@ -125,9 +140,25 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           Skip to content
         </a>
 
+        <EntrySequence />
         <ScrollProgress />
         <CursorLayer />
-        <SiteHeader />
+        <SiteHeader
+          commandPalette={
+            <CommandPalette
+              projects={projects.map((project) => ({
+                slug: project.slug,
+                title: `${project.title} ${project.titleAccent}`,
+                subtitle: project.term,
+              }))}
+              posts={posts.map((post) => ({
+                slug: post.slug,
+                title: post.title,
+                subtitle: `${post.readingMinutes} min`,
+              }))}
+            />
+          }
+        />
 
         <main id="main" className="relative">
           {children}
@@ -135,6 +166,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
         <SiteFooter />
         <Toaster position="bottom-right" richColors closeButton />
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );

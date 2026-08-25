@@ -31,6 +31,50 @@ export const projects: readonly Project[] = [
       { src: '/img/work/ticketing/admin-dashboard.jpg', title: 'Admin Dashboard', url: 'singink.com/admin' },
       { src: '/img/work/ticketing/admin-tickets.jpg', title: 'Admin Tickets', url: 'singink.com/admin/tickets' },
     ],
+    story: [
+      {
+        shot: 0,
+        label: 'The problem',
+        heading: 'Support was buried in a contact form',
+        body:
+          'Every question arrived as an unstructured email — no category, no priority, no history. Staff re-asked the same clarifying questions, and users had no way to check whether anyone had picked their issue up. The first job was giving both sides a shared record.',
+      },
+      {
+        shot: 1,
+        label: 'Intake',
+        heading: 'Validate at the boundary, not after',
+        body:
+          'The submission form enforces a real subject line, a category, and a priority before anything reaches the database. Rules live server-side too, because the HTML attributes are a courtesy — anyone can post straight to the endpoint. Rejections re-render the form with the input intact.',
+      },
+      {
+        shot: 2,
+        label: 'Tracking',
+        heading: 'A ticket the user can actually follow',
+        body:
+          'Once submitted, a ticket has a status the user can see change. That single affordance removed most of the "any update?" follow-ups, because the answer was on screen.',
+      },
+      {
+        shot: 3,
+        label: 'The thread',
+        heading: 'Replies, attachments, and an audit trail',
+        body:
+          'Each ticket carries a threaded conversation with file attachments and internal notes staff can add without the user seeing them. The timeline is the audit trail — who changed what, and when.',
+      },
+      {
+        shot: 4,
+        label: 'For staff',
+        heading: 'A dashboard that answers questions at a glance',
+        body:
+          'Open counts by status and priority, resolution times, and the queue itself on one screen. Built so the first thing a staff member sees is what needs attention, not a blank filter form.',
+      },
+      {
+        shot: 5,
+        label: 'The result',
+        heading: 'Roughly 60% less manual handling',
+        body:
+          'Almost none of that came from the dashboard I was most excited about. It came from the intake form collecting the right information the first time, so tickets arrived actionable instead of needing a round-trip.',
+      },
+    ],
     caseStudy: [
       {
         label: 'Situation & Task',
@@ -121,6 +165,43 @@ export const projects: readonly Project[] = [
       { src: '/img/work/cca/achievements.jpg', title: 'Achievements & Events', url: 'nyp-tabletennis.com/achievements' },
       { src: '/img/work/cca/club-socials.jpg', title: 'Club Socials & Feed', url: 'nyp-tabletennis.com/socials' },
       { src: '/img/work/cca/members.jpg', title: 'Member Spotlight', url: 'nyp-tabletennis.com/members' },
+    ],
+    story: [
+      {
+        shot: 0,
+        label: 'The problem',
+        heading: 'The club lived in a group chat',
+        body:
+          'Training times, results, and recruitment notices were scattered across chat history. New students had nowhere to look, and the committee re-posted the same information every semester. The site had to be the one place that answered those questions.',
+      },
+      {
+        shot: 1,
+        label: 'Recruitment',
+        heading: 'Answer "why should I join?" first',
+        body:
+          'The section a prospective member reaches first is the one that has to earn their attention. Benefits, training commitment, and skill level are stated plainly rather than buried under club history.',
+      },
+      {
+        shot: 2,
+        label: 'Credibility',
+        heading: 'Results, sortable and current',
+        body:
+          'An achievements table with sorting, alongside an events calendar. Competition results are the club’s strongest recruiting argument, so they get a section rather than a footnote.',
+      },
+      {
+        shot: 3,
+        label: 'Staying current',
+        heading: 'Let the feed do the updating',
+        body:
+          'The club already posted to Instagram constantly, so the site embeds that feed rather than asking the committee to maintain a second stream. The page stays current without anyone remembering to update it.',
+      },
+      {
+        shot: 4,
+        label: 'The people',
+        heading: 'Members, not stock photography',
+        body:
+          'A spotlight section with real members and their own words. It was the part the committee cared most about, and the part that makes the site feel like a club rather than a brochure.',
+      },
     ],
     caseStudy: [
       {

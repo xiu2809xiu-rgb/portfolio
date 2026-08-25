@@ -392,3 +392,9 @@
       0 8px 40px -12px rgb(180 255 57 / 0.35);
   }
 }
+
+/* Repeat visitors and reduced-motion visitors skip the entry curtain entirely;
+   the guard script sets this attribute before the first paint. */
+[data-intro='skip'] [data-intro-curtain] {
+  display: none !important;
+}

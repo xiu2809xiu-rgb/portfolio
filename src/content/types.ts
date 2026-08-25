@@ -58,6 +58,15 @@ export interface Metric {
   readonly suffix?: string;
 }
 
+/** One step of the scroll-driven walkthrough on a case study page. */
+export interface StoryBeat {
+  /** Index into the project's `screenshots`. */
+  readonly shot: number;
+  readonly label: string;
+  readonly heading: string;
+  readonly body: string;
+}
+
 export interface Project {
   readonly slug: string;
   readonly index: string;
@@ -71,6 +80,8 @@ export interface Project {
   readonly features: readonly string[];
   readonly stack: readonly string[];
   readonly screenshots: readonly Screenshot[];
+  /** Optional scroll-driven walkthrough; falls back to the gallery if absent. */
+  readonly story?: readonly StoryBeat[];
   readonly caseStudy: readonly CaseStudySection[];
   readonly metrics: readonly Metric[];
   readonly architecture: {

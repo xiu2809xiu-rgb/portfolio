@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Menu, X } from 'lucide-react';
 import { primaryNav } from '@/content/navigation';
 import { profile } from '@/content/profile';
@@ -16,9 +16,10 @@ import { cn } from '@/lib/utils';
  * plain overlay rather than a Radix Dialog — it needs no focus trapping beyond
  * what is here, and this avoids the layout shift the scroll-lock introduces.
  */
-export function SiteHeader() {
+export function SiteHeader({ commandPalette }: { commandPalette?: ReactNode }) {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState<string | null>(null);
   const pathname = usePathname();
 
   useEffect(() => {
@@ -50,9 +51,42 @@ export function SiteHeader() {
     };
   }, [open]);
 
+  /**
+   * Highlights whichever section is currently in view on the home page.
+   *
+   * The original site did this by comparing scrollY against every section's
+   * offsetTop on each scroll event, which forces a layout read per frame. An
+   * IntersectionObserver gets the same answer for free, and the tight rootMargin
+   * band means the active link changes when a section reaches the upper third of
+   * the viewport rather than the moment its first pixel appears.
+   */
+  useEffect(() => {
+    if (pathname !== '/') return;
+
+    const sections = [...document.querySelectorAll('section[id]')];
+    if (!sections.length) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        if (visible) setActiveSection(`#${visible.target.id}`);
+      },
+      { rootMargin: '-25% 0px -60% 0px', threshold: [0, 0.25, 0.5] },
+    );
+
+    for (const section of sections) observer.observe(section);
+    return () => observer.disconnect();
+  }, [pathname]);
+
+  // Derived rather than reset in an effect: a stale section id from a previous
+  // visit to `/` simply does not apply anywhere else.
+  const currentSection = pathname === '/' ? activeSection : null;
+
   const isActive = (href: string) => {
-    if (href === '/') return pathname === '/';
-    if (href.startsWith('/#')) return false;
+    if (href.startsWith('/#')) return currentSection === href.slice(1);
+    if (href === '/') return pathname === '/' && !currentSection;
     return pathname.startsWith(href);
   };
 
@@ -94,6 +128,8 @@ export function SiteHeader() {
           </ul>
 
           <div className="flex items-center gap-2">
+            {commandPalette}
+
             <Link
               href="/book"
               className={cn(

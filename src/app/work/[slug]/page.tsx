@@ -5,6 +5,7 @@ import { ArrowLeft, ArrowUpRight, Lightbulb } from 'lucide-react';
 import { Reveal } from '@/components/common/Reveal';
 import { CodeBlock } from '@/components/work/CodeBlock';
 import { ProjectGallery } from '@/components/work/ProjectGallery';
+import { ScrollStory } from '@/components/work/ScrollStory';
 import { getProject, projects } from '@/content/projects';
 import { absoluteUrl } from '@/lib/site';
 
@@ -82,6 +83,8 @@ export default async function ProjectPage({ params }: PageProps) {
           </p>
         </header>
 
+        {/* Hero shot stays a plain gallery — it is the "what does this look
+            like" answer, and it should not require scrolling to get. */}
         <div className="mt-10">
           <ProjectGallery screenshots={project.screenshots} />
         </div>
@@ -134,9 +137,22 @@ export default async function ProjectPage({ params }: PageProps) {
           </Reveal>
         </div>
 
+        {/* Scroll-driven walkthrough */}
+        {project.story?.length ? (
+          <section className="mt-20">
+            <Reveal>
+              <h2 className="eyebrow mb-2">Walkthrough</h2>
+              <p className="mb-10 max-w-xl text-sm text-muted-foreground">
+                Scroll to follow the build, screen by screen.
+              </p>
+            </Reveal>
+            <ScrollStory screenshots={project.screenshots} beats={project.story} />
+          </section>
+        ) : null}
+
         {/* STAR case study */}
         <Reveal>
-          <section className="mt-16">
+          <section className="mt-20">
             <h2 className="eyebrow mb-6">The case study</h2>
             <div className="grid gap-4 lg:grid-cols-3">
               {project.caseStudy.map((section) => (

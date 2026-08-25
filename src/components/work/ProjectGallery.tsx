@@ -58,14 +58,18 @@ export function ProjectGallery({ screenshots }: ProjectGalleryProps) {
           </span>
         </div>
 
-        <div className="group relative aspect-[16/10] bg-black">
+      {/* The source screenshots are 1909x915 (~2.09:1). Matching that exactly
+          means the whole UI is visible — a 16:10 frame with object-cover was
+          silently cropping about a quarter of the width off the sides, which on
+          a walkthrough hides the very thing being described. */}
+        <div className="group relative aspect-[1909/915] bg-black">
           <Image
             key={current.src}
             src={current.src}
             alt={current.title}
             fill
             sizes="(max-width: 1024px) 100vw, 70vw"
-            className="object-cover object-top"
+            className="object-contain"
             priority
           />
           <button
