@@ -171,6 +171,23 @@
     color: #05070a;
   }
 
+  /*
+    The original set `cursor: none` unconditionally, which left touch and
+    reduced-motion visitors with no cursor at all on a hybrid device. The class
+    is added by CursorLayer only when the custom cursor is actually running.
+  */
+  .has-custom-cursor,
+  .has-custom-cursor a,
+  .has-custom-cursor button,
+  .has-custom-cursor [role='button'],
+  .has-custom-cursor input,
+  .has-custom-cursor textarea,
+  .has-custom-cursor select,
+  .has-custom-cursor label,
+  .has-custom-cursor summary {
+    cursor: none;
+  }
+
   ::-webkit-scrollbar {
     width: 10px;
     height: 10px;
@@ -256,6 +273,74 @@
   .glass-hover:hover {
     border-color: rgb(180 255 57 / 0.28);
     transform: translateY(-3px);
+  }
+
+  /* ── Custom cursor ────────────────────────────────────────────────────
+     Carried over from the original site. Values are the originals: a 16px
+     difference-blended dot, a 40px trailing ring, and a 300px glow that sits
+     behind the content. `transform` is written by rAF in CursorLayer, so only
+     size/colour transition here — transitioning transform too would fight the
+     per-frame updates and smear the motion. */
+  .cur {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 16px;
+    height: 16px;
+    background: var(--brand-lime);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 99999;
+    mix-blend-mode: difference;
+    transition:
+      width 0.3s var(--ease-out-expo),
+      height 0.3s var(--ease-out-expo),
+      opacity 0.3s;
+    will-change: transform;
+  }
+  .cur.is-hover {
+    width: 60px;
+    height: 60px;
+    opacity: 0.6;
+  }
+
+  .cur-t {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 40px;
+    height: 40px;
+    border: 1px solid rgb(180 255 57 / 0.3);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 99998;
+    transition:
+      width 0.4s var(--ease-out-expo),
+      height 0.4s var(--ease-out-expo),
+      border-color 0.4s var(--ease-out-expo),
+      opacity 0.3s;
+    will-change: transform;
+  }
+  .cur-t.is-hover {
+    width: 80px;
+    height: 80px;
+    border-color: rgb(180 255 57 / 0.1);
+  }
+
+  .cur-g {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgb(180 255 57 / 0.04) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+    /* Negative z-index paints it above the page canvas but beneath content,
+       which is where the original put it. */
+    z-index: -1;
+    transition: opacity 0.3s;
+    will-change: transform;
   }
 
   /* Film grain over the whole page — hides banding in the large gradients. */

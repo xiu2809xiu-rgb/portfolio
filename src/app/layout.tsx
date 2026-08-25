@@ -3,6 +3,7 @@ import { Crimson_Pro, Outfit, Space_Mono } from 'next/font/google';
 import { Toaster } from '@/components/ui/sonner';
 import { SiteFooter } from '@/components/layout/SiteFooter';
 import { SiteHeader } from '@/components/layout/SiteHeader';
+import { CursorLayer } from '@/components/layout/CursorLayer';
 import { ScrollProgress } from '@/components/layout/ScrollProgress';
 import { profile } from '@/content/profile';
 import { siteConfig, siteUrl } from '@/lib/site';
@@ -125,6 +126,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </a>
 
         <ScrollProgress />
+        <CursorLayer />
         <SiteHeader />
 
         <main id="main" className="relative">
