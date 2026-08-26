@@ -1,49 +1,14 @@
-'use client';
-
-import { useEffect, useRef, useState } from 'react';
 import { Reveal } from '@/components/common/Reveal';
 import { SectionHeading } from '@/components/common/SectionHeading';
 import { skillGroups } from '@/content/resume';
-import { cn } from '@/lib/utils';
 
-/** Animates a proficiency bar to its target width once it scrolls into view. */
-function SkillBar({ name, value, delay }: { name: string; value: number; delay: number }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [filled, setFilled] = useState(false);
-
-  useEffect(() => {
-    const node = ref.current;
-    if (!node) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting) {
-          setFilled(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.4 },
-    );
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, []);
-
-  return (
-    <div ref={ref} className="flex items-center gap-3">
-      <span className="w-24 shrink-0 font-mono text-[0.68rem] text-muted-foreground">{name}</span>
-      <div className="h-1 flex-1 overflow-hidden rounded-full bg-white/[0.07]">
-        <div
-          className="h-full rounded-full bg-gradient-to-r from-lime to-aqua transition-[width] duration-1000 ease-out"
-          style={{ width: filled ? `${value}%` : '0%', transitionDelay: `${delay}ms` }}
-        />
-      </div>
-      <span className="w-9 shrink-0 text-right font-mono text-[0.68rem] text-muted-foreground">
-        {value}%
-      </span>
-    </div>
-  );
-}
-
+/**
+ * Grouped technology list.
+ *
+ * The proficiency bars that used to sit here are gone: self-assessed percentages
+ * are unverifiable and needed a disclaimer that conceded as much. What each of
+ * these was actually used for is in the case studies, which is a better answer.
+ */
 export function SkillsSection() {
   return (
     <section id="skills" className="scroll-mt-24 py-20 md:py-28">
@@ -51,18 +16,13 @@ export function SkillsSection() {
         <SectionHeading
           index="02"
           title="Skills"
-          description="What I can build with today, and roughly how confident I am with each. The percentages are self-assessed, not certified — treat them as a starting point for a conversation."
+          description="What I build with. Where each of these was actually used is in the case studies."
         />
 
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {skillGroups.map((group, index) => (
             <Reveal as="li" key={group.name} delay={index * 0.06}>
-              <div
-                className={cn(
-                  'glass glass-hover h-full rounded-2xl p-6',
-                  'flex flex-col',
-                )}
-              >
+              <div className="glass glass-hover flex h-full flex-col rounded-2xl p-6">
                 <span className="text-2xl" aria-hidden>
                   {group.icon}
                 </span>
@@ -81,19 +41,6 @@ export function SkillsSection() {
                     </li>
                   ))}
                 </ul>
-
-                {group.levels ? (
-                  <div className="mt-5 space-y-2.5 border-t border-hairline pt-5">
-                    {group.levels.map((level, levelIndex) => (
-                      <SkillBar
-                        key={level.name}
-                        name={level.name}
-                        value={level.value}
-                        delay={levelIndex * 120}
-                      />
-                    ))}
-                  </div>
-                ) : null}
               </div>
             </Reveal>
           ))}

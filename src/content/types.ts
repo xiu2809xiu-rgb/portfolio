@@ -23,11 +23,9 @@ export interface Profile {
   readonly location: string;
   readonly timezone: string;
   readonly email: string;
-  readonly phone: string;
   readonly photo: string;
   readonly resume: string;
   readonly bio: readonly string[];
-  readonly motto: string;
   readonly facts: readonly { label: string; value: string }[];
   readonly exploring: readonly string[];
   readonly socials: readonly Link[];
@@ -74,21 +72,31 @@ export interface Project {
   readonly titleAccent: string;
   readonly role: string;
   readonly module: string;
-  readonly term: string;
+  /** Omitted where the dates are not confirmed — never guessed. */
+  readonly term?: string;
   readonly status: 'completed' | 'in-progress';
+  /** Shown in Featured Work on the home page. Others appear only on /work. */
+  readonly featured?: boolean;
+  /** Award or placing, printed as a badge. */
+  readonly award?: string;
+  /** Team credit line. */
+  readonly team?: string;
+  /** Caveat displayed beside the live demo link. */
+  readonly demoNote?: string;
   readonly summary: string;
   readonly features: readonly string[];
   readonly stack: readonly string[];
+  /** Empty where no imagery exists yet; cards fall back to a text treatment. */
   readonly screenshots: readonly Screenshot[];
   /** Optional scroll-driven walkthrough; falls back to the gallery if absent. */
   readonly story?: readonly StoryBeat[];
   readonly caseStudy: readonly CaseStudySection[];
   readonly metrics: readonly Metric[];
-  readonly architecture: {
+  readonly architecture?: {
     readonly flow: readonly string[];
     readonly description: string;
   };
-  readonly code: {
+  readonly code?: {
     readonly filename: string;
     readonly language: string;
     readonly source: string;
@@ -111,6 +119,8 @@ export interface ProcessStep {
   readonly icon: string;
   readonly title: string;
   readonly body: string;
+  /** A real instance of this step, so the process is evidenced not asserted. */
+  readonly evidence?: string;
 }
 
 export interface Achievement {
@@ -119,6 +129,8 @@ export interface Achievement {
   readonly organisation: string;
   readonly body: string;
   readonly year?: string;
+  /** Renders smaller, below the main grid. */
+  readonly minor?: boolean;
 }
 
 export interface Testimonial {

@@ -22,7 +22,7 @@ export const rebootSteps: readonly RebootStep[] = [
   { label: 'mounting avatar.glb', detail: '2.09 MB · 7 clips', ms: 420 },
   { label: 'warming WebGL context', detail: '~48 MB VRAM', ms: 340 },
   { label: 'compiling shaders', detail: 'aurora · particles', ms: 300 },
-  { label: 'hydrating routes', detail: '23 static', ms: 280 },
+  { label: 'hydrating routes', detail: '29 static', ms: 280 },
   { label: 'checking calendar', detail: 'free/busy only', ms: 380 },
   { label: 'ready', detail: 'welcome back', ms: 420 },
 ];

@@ -14,13 +14,18 @@ const PixelReveal = dynamic(() => import('@/components/react-bits/pixel-reveal')
   ),
 });
 
-/** Phrases the BlurHighlight component brings into focus as the copy scrolls in. */
+/**
+ * Phrases BlurHighlight brings into focus as the copy scrolls in.
+ *
+ * These must match strings that exist verbatim in `profile.bio` — a phrase that
+ * is not present simply never highlights, so they are updated together.
+ */
 const HIGHLIGHTS = [
-  'Nanyang Polytechnic',
-  'real-world problems',
-  'Python Flask',
-  'empathy',
-  'user-centric design',
+  'the interface, the API behind it, and the research',
+  'Full-Stack Development and Digital UX Design',
+  'Five of them were blocked by a map popup',
+  'first place at the NYP × AWS Hackathon 2026',
+  '2027 software engineering internship',
 ];
 
 export function AboutSection() {
@@ -65,12 +70,6 @@ export function AboutSection() {
                   <p key={paragraph.slice(0, 32)}>{paragraph}</p>
                 ))}
               </BlurHighlight>
-            </Reveal>
-
-            <Reveal delay={0.2}>
-              <blockquote className="mt-7 border-l-2 border-lime/40 pl-5 font-serif text-xl italic text-lime">
-                “{profile.motto}”
-              </blockquote>
             </Reveal>
 
             <Reveal delay={0.25}>

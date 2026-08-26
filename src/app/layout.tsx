@@ -152,7 +152,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               projects={projects.map((project) => ({
                 slug: project.slug,
                 title: `${project.title} ${project.titleAccent}`,
-                subtitle: project.term,
+                subtitle: project.term ?? project.role,
               }))}
               posts={posts.map((post) => ({
                 slug: post.slug,

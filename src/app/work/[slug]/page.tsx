@@ -39,7 +39,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       description: project.summary,
       type: 'article',
       url: absoluteUrl(`/work/${project.slug}`),
-      images: [{ url: project.screenshots[0].src, width: 1200, height: 750, alt: title }],
+      // No explicit image: the sibling opengraph-image route generates a card
+      // per case study, and pointing at screenshots[0] crashed for the projects
+      // that have no imagery yet.
     },
   };
 }
@@ -50,6 +52,8 @@ export default async function ProjectPage({ params }: PageProps) {
   if (!project) notFound();
 
   const otherProject = projects.find((entry) => entry.slug !== project.slug);
+  // Bound locally so the narrowing survives into the map callbacks below.
+  const architecture = project.architecture;
 
   return (
     <article className="pb-24 pt-32 md:pt-40">
@@ -67,7 +71,13 @@ export default async function ProjectPage({ params }: PageProps) {
             <span className="font-mono text-sm text-lime">{project.index}</span>
             <span className="font-mono text-[0.65rem] uppercase tracking-widest text-muted-foreground">
               {project.role} · {project.module}
+              {project.term ? ` · ${project.term}` : ''}
             </span>
+            {project.award ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-lime/50 bg-lime/15 px-2.5 py-0.5 font-mono text-[0.6rem] uppercase tracking-widest text-lime">
+                🥇 {project.award}
+              </span>
+            ) : null}
             <span className="inline-flex items-center gap-1.5 rounded-full border border-success/30 bg-success/10 px-2.5 py-0.5 font-mono text-[0.6rem] uppercase tracking-widest text-success">
               <span className="size-1.5 rounded-full bg-success" />
               {project.status === 'completed' ? 'Completed' : 'In progress'}
@@ -81,13 +91,20 @@ export default async function ProjectPage({ params }: PageProps) {
           <p className="mt-5 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
             {project.summary}
           </p>
+
+          {project.team ? (
+            <p className="mt-4 font-mono text-xs text-muted-foreground">{project.team}</p>
+          ) : null}
         </header>
 
         {/* Hero shot stays a plain gallery — it is the "what does this look
-            like" answer, and it should not require scrolling to get. */}
-        <div className="mt-10">
-          <ProjectGallery screenshots={project.screenshots} />
-        </div>
+            like" answer, and it should not require scrolling to get. Projects
+            without imagery yet simply skip it rather than showing a placeholder. */}
+        {project.screenshots.length ? (
+          <div className="mt-10">
+            <ProjectGallery screenshots={project.screenshots} />
+          </div>
+        ) : null}
 
         {/* Metrics */}
         <Reveal>
@@ -138,7 +155,7 @@ export default async function ProjectPage({ params }: PageProps) {
         </div>
 
         {/* Scroll-driven walkthrough */}
-        {project.story?.length ? (
+        {project.story?.length && project.screenshots.length ? (
           <section className="mt-20">
             <Reveal>
               <h2 className="eyebrow mb-2">Walkthrough</h2>
@@ -170,17 +187,18 @@ export default async function ProjectPage({ params }: PageProps) {
         </Reveal>
 
         {/* Architecture */}
+        {architecture ? (
         <Reveal>
           <section className="mt-16">
             <h2 className="eyebrow mb-6">Architecture</h2>
             <div className="glass rounded-2xl p-6 sm:p-8">
               <ol className="flex flex-wrap items-center gap-3">
-                {project.architecture.flow.map((node, index) => (
+                {architecture.flow.map((node, index) => (
                   <li key={node} className="flex items-center gap-3">
                     <span className="rounded-xl border border-hairline bg-white/[0.03] px-4 py-2.5 font-mono text-xs">
                       {node}
                     </span>
-                    {index < project.architecture.flow.length - 1 ? (
+                    {index < architecture.flow.length - 1 ? (
                       <span className="text-lime" aria-hidden>
                         →
                       </span>
@@ -189,23 +207,26 @@ export default async function ProjectPage({ params }: PageProps) {
                 ))}
               </ol>
               <p className="mt-5 max-w-3xl text-sm leading-relaxed text-muted-foreground">
-                {project.architecture.description}
+                {architecture.description}
               </p>
             </div>
           </section>
         </Reveal>
+        ) : null}
 
         {/* Code sample */}
-        <Reveal>
-          <section className="mt-16">
-            <h2 className="eyebrow mb-6">A slice of the code</h2>
-            <CodeBlock
-              filename={project.code.filename}
-              language={project.code.language}
-              source={project.code.source}
-            />
-          </section>
-        </Reveal>
+        {project.code ? (
+          <Reveal>
+            <section className="mt-16">
+              <h2 className="eyebrow mb-6">A slice of the code</h2>
+              <CodeBlock
+                filename={project.code.filename}
+                language={project.code.language}
+                source={project.code.source}
+              />
+            </section>
+          </Reveal>
+        ) : null}
 
         {/* Demo video */}
         {project.video ? (
@@ -247,7 +268,15 @@ export default async function ProjectPage({ params }: PageProps) {
         </Reveal>
 
         {/* Links + next project */}
-        <div className="mt-16 flex flex-wrap items-center gap-3 border-t border-hairline pt-10">
+        {project.demoNote ? (
+          <Reveal>
+            <p className="mt-16 rounded-xl border border-warning/25 bg-warning/[0.06] p-4 text-sm leading-relaxed text-warning">
+              {project.demoNote}
+            </p>
+          </Reveal>
+        ) : null}
+
+        <div className="mt-10 flex flex-wrap items-center gap-3 border-t border-hairline pt-10">
           {project.links.map((link) => (
             <a
               key={link.href}

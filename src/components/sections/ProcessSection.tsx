@@ -14,7 +14,7 @@ const ScrollStack = dynamic(
 );
 
 /**
- * Design Thinking, as a sticky card stack you scroll through.
+ * The working process, as a sticky card stack you scroll through.
  *
  * The five steps are inherently sequential, which is what ScrollStack is good at —
  * each card pins, then gives way to the next. Custom children rather than the
@@ -28,7 +28,7 @@ export function ProcessSection() {
         <SectionHeading
           index="05"
           title="How I work"
-          description="Every project follows a structured Design Thinking loop — so what gets built is what people actually needed, not just what was easy to specify."
+          description="Not a framework I can recite — the actual order things happen in, with a real instance under each step."
         />
       </div>
 
@@ -67,6 +67,13 @@ export function ProcessSection() {
               <p className="mt-4 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
                 {step.body}
               </p>
+
+              {/* The worked example. A step without one is just an assertion. */}
+              {step.evidence ? (
+                <p className="mt-5 max-w-xl border-l-2 border-lime/40 pl-4 text-sm leading-relaxed text-foreground/80">
+                  {step.evidence}
+                </p>
+              ) : null}
             </div>
 
             {/* Progress rail: fills as the steps advance. */}

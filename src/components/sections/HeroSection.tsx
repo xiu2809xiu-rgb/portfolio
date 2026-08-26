@@ -69,7 +69,7 @@ export function HeroSection() {
 
           <h1 className="font-heading text-[clamp(2.5rem,9vw,5.5rem)] font-extrabold leading-[0.95] tracking-[-0.03em]">
             <StaggeredText
-              text="I craft"
+              text="Full-stack"
               as="span"
               className="block"
               segmentBy="words"
@@ -79,7 +79,7 @@ export function HeroSection() {
               blur
             />
             <StaggeredText
-              text="web experiences"
+              text="developer,"
               as="span"
               className="text-stroke block"
               segmentBy="words"
@@ -89,7 +89,7 @@ export function HeroSection() {
               blur
             />
             <StaggeredText
-              text="that matter."
+              text="UX designer."
               as="span"
               className="block text-gradient-lime"
               segmentBy="words"
@@ -106,10 +106,10 @@ export function HeroSection() {
             transition={{ duration: 0.7, delay: 0.9 }}
             className="mt-7 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg"
           >
-            IT student at Nanyang Polytechnic with a foundation in Flask, SQL, and
-            TypeScript — driven by{' '}
-            <em className="font-serif text-foreground">user-centric design</em> and building{' '}
-            <RotatingWord words={heroRotation} className="text-lime" /> for Southeast Asia.
+            Diploma in Information Technology at Nanyang Polytechnic, specialising in{' '}
+            <RotatingWord words={heroRotation} className="text-lime" />. First place at the{' '}
+            <em className="font-serif text-foreground">NYP × AWS Hackathon 2026</em>. Seeking a
+            2027 software engineering internship in Singapore.
           </motion.p>
 
           <motion.div

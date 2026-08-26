@@ -16,7 +16,8 @@
     "avatar:optimize": "node scripts/optimize-avatar.mjs",
     "shots": "node scripts/shoot.mjs",
     "badge:generate": "node scripts/generate-badge.mjs",
-    "lanyard:optimize": "node scripts/optimize-lanyard-card.mjs"
+    "lanyard:optimize": "node scripts/optimize-lanyard-card.mjs",
+    "smartrecap:capture": "node scripts/capture-smartrecap.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

@@ -8,7 +8,7 @@ import { projects } from '@/content/projects';
 export const metadata: Metadata = {
   title: 'Work',
   description:
-    'Case studies from shipped projects — a Flask customer ticketing system and a CCA website built from wireframe to deploy.',
+    'Case studies from shipped work — SmartRecap (1st place, NYP × AWS Hackathon 2026), CertAIn, Singink, SwapLah, and a CCA website built from wireframe to deploy.',
   alternates: { canonical: '/work' },
 };
 
@@ -21,9 +21,8 @@ export default function WorkPage() {
           Things I have <span className="text-gradient-lime">actually shipped</span>
         </h1>
         <p className="mt-5 text-base leading-relaxed text-muted-foreground sm:text-lg">
-          Two projects, written up as full case studies. Each one covers the problem I was
-          handed, what I built, the trade-offs I made, and what changed as a result — not just a
-          screenshot and a tech list.
+          Full case studies. Each covers the problem I was handed, what I built, the trade-offs I
+          made, and what changed as a result — not just a screenshot and a tech list.
         </p>
       </header>
 
@@ -35,15 +34,34 @@ export default function WorkPage() {
               className="group glass glass-hover grid overflow-hidden rounded-3xl lg:grid-cols-[1.1fr_1fr]"
             >
               <div className="relative aspect-[16/10] overflow-hidden bg-black/40 lg:aspect-auto lg:min-h-[22rem]">
-                <Image
-                  src={project.screenshots[0].src}
-                  alt={`${project.title} ${project.titleAccent}`}
-                  fill
-                  sizes="(max-width: 1024px) 100vw, 55vw"
-                  className="object-cover object-top transition-transform duration-700 ease-out group-hover:scale-[1.04]"
-                  priority={index === 0}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#05070a]/80 via-transparent to-transparent" />
+                {project.screenshots.length ? (
+                  <>
+                    <Image
+                      src={project.screenshots[0].src}
+                      alt={`${project.title} ${project.titleAccent}`}
+                      fill
+                      sizes="(max-width: 1024px) 100vw, 55vw"
+                      className="object-cover object-top transition-transform duration-700 ease-out group-hover:scale-[1.04]"
+                      priority={index === 0}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#05070a]/80 via-transparent to-transparent" />
+                  </>
+                ) : (
+                  <div className="flex size-full flex-col justify-center bg-[radial-gradient(ellipse_at_30%_20%,rgba(180,255,57,0.10),transparent_60%)] p-8">
+                    <p className="font-heading text-4xl font-extrabold tracking-tight text-foreground/90">
+                      {project.title}
+                    </p>
+                    <p className="mt-2 font-mono text-xs uppercase tracking-widest text-lime">
+                      {project.titleAccent}
+                    </p>
+                  </div>
+                )}
+
+                {project.award ? (
+                  <span className="absolute left-5 top-5 inline-flex items-center gap-1.5 rounded-full border border-lime/50 bg-lime/15 px-3 py-1 font-mono text-[0.62rem] uppercase tracking-widest text-lime backdrop-blur">
+                    🥇 {project.award}
+                  </span>
+                ) : null}
               </div>
 
               <div className="flex flex-col justify-center p-7 sm:p-10">
@@ -66,8 +84,12 @@ export default function WorkPage() {
                 </h2>
 
                 <p className="mt-1 font-mono text-xs text-muted-foreground">
-                  {project.module} · {project.term}
+                  {project.module}
+                  {project.term ? ` · ${project.term}` : ''}
                 </p>
+                {project.team ? (
+                  <p className="mt-1 font-mono text-xs text-muted-foreground">{project.team}</p>
+                ) : null}
 
                 <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
                   {project.summary}

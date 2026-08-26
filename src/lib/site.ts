@@ -19,7 +19,7 @@ export const siteConfig = {
   name: `${profile.fullName} — ${profile.role}`,
   shortName: profile.fullName,
   description:
-    'IT student at Nanyang Polytechnic building user-centric web experiences with Python, Flask, and TypeScript. Case studies, writing, and a calendar you can book directly.',
+    'Full-stack developer and UX designer at Nanyang Polytechnic. First place at the NYP × AWS Hackathon 2026. Case studies, writing, and a calendar you can book directly. Seeking a 2027 software engineering internship in Singapore.',
   url: siteUrl,
   locale: 'en_SG',
   keywords: [
@@ -30,6 +30,10 @@ export const siteConfig = {
     'Singapore developer',
     'Flask developer',
     'Next.js portfolio',
+    'full-stack developer',
+    'UX design',
+    'software engineering internship',
+    'SmartRecap',
   ],
 } as const;
 

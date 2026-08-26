@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { ArrowUpRight } from 'lucide-react';
 import { Reveal } from '@/components/common/Reveal';
 import { SectionHeading } from '@/components/common/SectionHeading';
-import { projects } from '@/content/projects';
+import { featuredProjects } from '@/content/projects';
 
 export function FeaturedWork() {
   return (
@@ -12,33 +12,55 @@ export function FeaturedWork() {
         <SectionHeading
           index="03"
           title="Featured work"
-          description="Two shipped projects, written up properly — the problem, what I actually built, and what changed as a result."
+          description="Written up properly — the problem, what I actually built, and what changed as a result."
         />
 
         <ul className="grid gap-5 lg:grid-cols-2">
-          {projects.map((project, index) => (
+          {featuredProjects.map((project, index) => (
             <Reveal as="li" key={project.slug} delay={index * 0.1}>
               <Link
                 href={`/work/${project.slug}`}
                 className="group glass glass-hover block h-full overflow-hidden rounded-3xl"
               >
+                {/* Projects without imagery yet get a typographic panel rather
+                    than a grey placeholder box. */}
                 <div className="relative aspect-[16/10] overflow-hidden border-b border-hairline bg-black/40">
-                  <Image
-                    src={project.screenshots[0].src}
-                    alt={`${project.title} ${project.titleAccent} — ${project.screenshots[0].title}`}
-                    fill
-                    sizes="(max-width: 1024px) 100vw, 50vw"
-                    className="object-cover object-top transition-transform duration-700 ease-out group-hover:scale-[1.04]"
-                    priority={index === 0}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#05070a] via-transparent to-transparent opacity-70" />
+                  {project.screenshots.length ? (
+                    <>
+                      <Image
+                        src={project.screenshots[0].src}
+                        alt={`${project.title} ${project.titleAccent} — ${project.screenshots[0].title}`}
+                        fill
+                        sizes="(max-width: 1024px) 100vw, 50vw"
+                        className="object-cover object-top transition-transform duration-700 ease-out group-hover:scale-[1.04]"
+                        priority={index === 0}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#05070a] via-transparent to-transparent opacity-70" />
+                    </>
+                  ) : (
+                    <div className="flex size-full flex-col justify-center bg-[radial-gradient(ellipse_at_30%_20%,rgba(180,255,57,0.10),transparent_60%)] p-7">
+                      <p className="font-heading text-3xl font-extrabold tracking-tight text-foreground/90 sm:text-4xl">
+                        {project.title}
+                      </p>
+                      <p className="mt-2 font-mono text-xs uppercase tracking-widest text-lime">
+                        {project.titleAccent}
+                      </p>
+                    </div>
+                  )}
+
+                  {project.award ? (
+                    <span className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full border border-lime/50 bg-lime/15 px-3 py-1 font-mono text-[0.62rem] uppercase tracking-widest text-lime backdrop-blur">
+                      🥇 {project.award}
+                    </span>
+                  ) : null}
                 </div>
 
                 <div className="p-6 sm:p-7">
                   <div className="flex items-center gap-3">
                     <span className="font-mono text-xs text-lime">{project.index}</span>
                     <span className="font-mono text-[0.65rem] uppercase tracking-widest text-muted-foreground">
-                      {project.role} · {project.term}
+                      {project.role}
+                      {project.term ? ` · ${project.term}` : ''}
                     </span>
                   </div>
 
