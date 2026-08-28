@@ -66,6 +66,22 @@ export class BookingService {
       );
     }
 
+    /*
+      The per-day cap is enforced here rather than inside isBookable so the
+      refusal can say why. Without this the cap was decoration: the grid greyed
+      out a full day, but anyone POSTing straight to /api/bookings — or anyone
+      whose page was rendered before the day filled up — could keep adding to it.
+    */
+    const bookedThatDay = await this.repository.countActiveOnDay(
+      slot.start.setZone(this.policy.timezone),
+      this.policy.timezone,
+    );
+    if (bookedThatDay >= this.policy.maxPerDay) {
+      throw new SlotUnavailableError(
+        `That day already has ${this.policy.maxPerDay} sessions booked. Please pick another date.`,
+      );
+    }
+
     const { ok, state } = await this.availability.isBookable(slot);
     if (!ok) {
       if (state === 'busy') throw new SlotAlreadyBookedError();

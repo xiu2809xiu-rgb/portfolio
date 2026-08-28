@@ -1,6 +1,7 @@
 'use client';
 
-import { motion, useReducedMotion } from 'motion/react';
+import { motion } from 'motion/react';
+import { useStillness } from '@/lib/use-stillness';
 
 /**
  * Route transition wrapper.
@@ -14,7 +15,7 @@ import { motion, useReducedMotion } from 'motion/react';
  * a long curtain between pages becomes a tax the second time someone navigates.
  */
 export default function Template({ children }: { children: React.ReactNode }) {
-  const reduced = useReducedMotion();
+  const reduced = useStillness();
 
   if (reduced) return <>{children}</>;
 

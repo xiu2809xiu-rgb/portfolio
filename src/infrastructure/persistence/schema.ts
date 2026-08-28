@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import { index, pgTable, text, timestamp, uniqueIndex, varchar } from 'drizzle-orm/pg-core';
 
 /**
@@ -29,6 +30,17 @@ export const bookings = pgTable(
     uniqueIndex('bookings_reference_idx').on(table.reference),
     index('bookings_window_idx').on(table.startsAt, table.endsAt),
     index('bookings_status_idx').on(table.status),
+    /*
+      The one guarantee application code cannot give itself. Availability is
+      read, then the row is written, and between those two awaits a second
+      request can pass the same check — so two people get told they have the
+      slot. A partial unique index moves the decision into Postgres, where the
+      race is decided once. Partial, because a cancelled booking must free its
+      slot for someone else.
+    */
+    uniqueIndex('bookings_live_slot_idx')
+      .on(table.startsAt)
+      .where(sql`${table.status} = 'confirmed'`),
   ],
 );
 

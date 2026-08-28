@@ -9,12 +9,12 @@ import {
   useInView,
   useMotionValue,
   useMotionValueEvent,
-  useReducedMotion,
   useScroll,
   useTransform,
   type MotionValue,
 } from 'motion/react';
 import { projects } from '@/content/projects';
+import { useStillness } from '@/lib/use-stillness';
 import { cn } from '@/lib/utils';
 
 /**
@@ -39,7 +39,7 @@ const LETTERS = ['W', 'O', 'R', 'K'] as const;
 const COPIES = 13;
 
 export function WorkPortal() {
-  const reduced = useReducedMotion();
+  const reduced = useStillness();
   const hostRef = useRef<HTMLElement>(null);
   const trackRef = useRef<HTMLUListElement>(null);
 

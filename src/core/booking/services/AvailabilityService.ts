@@ -153,6 +153,8 @@ export class AvailabilityService {
       now,
       earliest: this.policy.earliestBookableFrom(now),
       latest: this.policy.latestBookableFrom(now),
+      // Capacity is a property of the day, not the slot, and it needs its own
+      // message — BookingService.create checks it before calling this.
       atCapacity: false,
     });
     return { ok: state === 'free', state };

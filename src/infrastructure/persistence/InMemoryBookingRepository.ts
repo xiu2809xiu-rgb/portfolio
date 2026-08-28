@@ -1,5 +1,6 @@
 import { DateTime } from 'luxon';
 import type { Booking } from '@/core/booking/domain/Booking';
+import { SlotAlreadyBookedError } from '@/core/booking/domain/errors';
 import type { BookingRepositoryPort } from '@/core/booking/ports';
 
 /**
@@ -16,6 +17,20 @@ export class InMemoryBookingRepository implements BookingRepositoryPort {
   private readonly byReference = new Map<string, Booking>();
 
   async save(booking: Booking): Promise<void> {
+    /*
+      Mirrors the unique index the Postgres adapter relies on, so the two stores
+      refuse the same things. It closes nothing in production — a serverless
+      cold start gives each instance its own Map, which is exactly why this
+      adapter reports isDurable: false — but it keeps local behaviour honest.
+    */
+    if (!this.byReference.has(booking.reference)) {
+      const taken = [...this.byReference.values()].some(
+        (existing) =>
+          existing.isActive && existing.slot.start.toMillis() === booking.slot.start.toMillis(),
+      );
+      if (taken) throw new SlotAlreadyBookedError();
+    }
+
     this.byReference.set(booking.reference, booking);
   }
 

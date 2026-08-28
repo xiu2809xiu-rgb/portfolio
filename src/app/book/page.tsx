@@ -15,12 +15,26 @@ export const metadata: Metadata = {
 // Availability is live data; never prerender this page.
 export const dynamic = 'force-dynamic';
 
-const ASSURANCES = [
-  {
-    icon: Zap,
-    title: 'Confirmed instantly',
-    body: 'No back-and-forth. Pick a slot and the invite is created the moment you submit.',
-  },
+/*
+  Everything this page promises is conditional on the calendar adapter being the
+  real one. With the Google credentials absent the site falls back to demo
+  availability, and "the invite is created the moment you submit" becomes a
+  straightforward untruth — the worst possible copy to show a recruiter. Both the
+  subheading and the assurance card are derived from `calendar.isLive` so the page
+  can only ever promise what the running configuration can actually deliver.
+*/
+const assurancesFor = (live: boolean) => [
+  live
+    ? {
+        icon: Zap,
+        title: 'Confirmed instantly',
+        body: 'No back-and-forth. Pick a slot and the invite is created the moment you submit.',
+      }
+    : {
+        icon: Zap,
+        title: 'Confirmed by email',
+        body: 'The calendar is in demo mode right now, so I confirm each request by email myself.',
+      },
   {
     icon: ShieldCheck,
     title: 'Free/busy only',
@@ -36,6 +50,8 @@ const ASSURANCES = [
 export default function BookPage() {
   const container = Container.resolve();
   const config = container.policy.toClientConfig() as PolicyConfig;
+  const live = container.calendar.isLive;
+  const assurances = assurancesFor(live);
 
   return (
     <div className="wrap pb-24 pt-32 md:pt-40">
@@ -46,7 +62,10 @@ export default function BookPage() {
         </h1>
         <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-muted-foreground">
           Internships, project questions, a code review, or just a conversation about building
-          things. Pick a length, pick a slot, and you&rsquo;ll get a calendar invite by email.
+          things.{' '}
+          {live
+            ? "Pick a length, pick a slot, and you’ll get a calendar invite by email."
+            : "Pick a length and a slot — this calendar is in demo mode at the moment, so I’ll confirm by email."}
         </p>
       </div>
 
@@ -55,7 +74,7 @@ export default function BookPage() {
       </div>
 
       <ul className="mx-auto mt-12 grid max-w-5xl gap-4 sm:grid-cols-3">
-        {ASSURANCES.map((item) => (
+        {assurances.map((item) => (
           <li key={item.title} className="glass rounded-2xl p-5">
             <item.icon className="mb-3 size-5 text-lime" />
             <h2 className="font-heading text-sm font-bold">{item.title}</h2>

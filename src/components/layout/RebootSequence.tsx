@@ -1,12 +1,13 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import { AnimatePresence, motion } from 'motion/react';
 import { Check } from 'lucide-react';
 import { BrandParticleText } from '@/components/common/BrandParticleText';
 import { profile } from '@/content/profile';
 import { rebootSteps } from '@/content/reboot';
 import { soundEngine } from '@/lib/audio/SoundEngine';
+import { useStillness } from '@/lib/use-stillness';
 
 interface RebootSequenceProps {
   open: boolean;
@@ -33,7 +34,7 @@ interface RebootSequenceProps {
  * starts fresh without needing to be reset on close.
  */
 export function RebootSequence({ open, onClose, soundEnabled }: RebootSequenceProps) {
-  const reduced = useReducedMotion();
+  const reduced = useStillness();
   const [step, setStep] = useState(-1);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 

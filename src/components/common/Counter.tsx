@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useReducedMotion } from 'motion/react';
+import { useStillness } from '@/lib/use-stillness';
 
 interface CounterProps {
   value: number;
@@ -17,9 +17,13 @@ interface CounterProps {
  * final state instead of stopping dead. Renders the final value immediately for
  * reduced-motion visitors and for anything that reads the DOM without scrolling
  * (crawlers, "find in page").
+ *
+ * Reduced motion is read through {@link useStillness} rather than motion's hook
+ * because it changes the rendered *text*: the server prints 0 and a reduced-motion
+ * client would print the final number, which is a hydration mismatch.
  */
 export function Counter({ value, suffix = '', durationMs = 1600, className }: CounterProps) {
-  const reduced = useReducedMotion();
+  const reduced = useStillness();
   const ref = useRef<HTMLSpanElement>(null);
   const [counted, setCounted] = useState(0);
 

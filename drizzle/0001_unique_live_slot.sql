@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "bookings_live_slot_idx" ON "bookings" USING btree ("starts_at") WHERE "bookings"."status" = 'confirmed';

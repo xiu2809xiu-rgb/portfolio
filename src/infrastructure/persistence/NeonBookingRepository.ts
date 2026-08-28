@@ -3,6 +3,7 @@ import { and, eq, gte, lt, lte, sql } from 'drizzle-orm';
 import { drizzle, type NeonHttpDatabase } from 'drizzle-orm/neon-http';
 import { DateTime } from 'luxon';
 import { Booking, type BookingSnapshot } from '@/core/booking/domain/Booking';
+import { SlotAlreadyBookedError } from '@/core/booking/domain/errors';
 import type { BookingRepositoryPort } from '@/core/booking/ports';
 import { bookings, type BookingRow } from './schema';
 
@@ -48,19 +49,36 @@ export class NeonBookingRepository implements BookingRepositoryPort {
       createdAt: new Date(snapshot.createdAt),
     };
 
-    // Upsert so `save` can be called twice for one booking — once to claim the
-    // slot, once to attach the calendar event id.
-    await this.db
-      .insert(bookings)
-      .values(row)
-      .onConflictDoUpdate({
-        target: bookings.id,
-        set: {
+    /*
+      `save` is called twice for one booking: once to claim the slot, once to
+      attach the calendar event id. Those are different writes, and collapsing
+      them into one upsert is what left the claim unguarded.
+
+      The claim is an insert that defers to the database. If the partial unique
+      index on (starts_at) where status = 'confirmed' rejects it, someone else
+      won the slot in the microseconds since availability was read, and the
+      caller is told so rather than being handed a second confirmation for the
+      same half hour.
+    */
+    if (snapshot.calendarEventId) {
+      await this.db
+        .update(bookings)
+        .set({
           status: row.status,
           calendarEventId: row.calendarEventId,
           meetingUrl: row.meetingUrl,
-        },
-      });
+        })
+        .where(eq(bookings.id, row.id));
+      return;
+    }
+
+    const claimed = await this.db
+      .insert(bookings)
+      .values(row)
+      .onConflictDoNothing()
+      .returning({ id: bookings.id });
+
+    if (!claimed.length) throw new SlotAlreadyBookedError();
   }
 
   async findByReference(reference: string): Promise<Booking | null> {

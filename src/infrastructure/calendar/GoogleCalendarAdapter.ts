@@ -74,7 +74,23 @@ export class GoogleCalendarAdapter implements CalendarPort {
         },
       });
 
-      const periods = response.data.calendars?.[this.config.calendarId]?.busy ?? [];
+      /*
+        freebusy.query answers 200 with a per-calendar `errors` array — notFound,
+        notACalendar, an auth scope problem — rather than throwing. Reading only
+        `.busy` turns any of those into an empty busy list, which classifies every
+        slot as free and reports a healthy probe. A mistyped GOOGLE_CALENDAR_ID
+        would silently advertise a wide-open week.
+      */
+      const entry = response.data.calendars?.[this.config.calendarId];
+      if (entry?.errors?.length) {
+        throw new CalendarUnavailableError(
+          `Google could not read calendar "${this.config.calendarId}": ${entry.errors
+            .map((problem) => problem.reason ?? 'unknown')
+            .join(', ')}`,
+        );
+      }
+
+      const periods = entry?.busy ?? [];
 
       return periods.flatMap((period) => {
         if (!period.start || !period.end) return [];
@@ -85,6 +101,8 @@ export class GoogleCalendarAdapter implements CalendarPort {
         }
       });
     } catch (error) {
+      // The per-calendar error above is already specific; don't bury it.
+      if (error instanceof CalendarUnavailableError) throw error;
       throw new CalendarUnavailableError(
         `Could not read calendar availability: ${(error as Error).message}`,
       );

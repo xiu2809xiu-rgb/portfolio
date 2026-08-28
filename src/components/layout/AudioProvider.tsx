@@ -12,6 +12,7 @@ import {
 } from 'react';
 import { MUSIC_VOLUME, SFX_VOLUME, playlist } from '@/content/audio';
 import { soundEngine, type SoundName } from '@/lib/audio/SoundEngine';
+import { toast } from 'sonner';
 
 interface AudioState {
   sfxEnabled: boolean;
@@ -27,7 +28,6 @@ interface AudioState {
 const AudioContext = createContext<AudioState | null>(null);
 
 const SFX_KEY = 'rk:sfx';
-const MUSIC_KEY = 'rk:music';
 
 /**
  * Owns interface sounds and the background music player.
@@ -120,30 +120,27 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     const audio = audioRef.current;
     if (!audio) return;
 
+    /*
+      State comes from the element's own play/pause/error events below, not from
+      here. The click handler only asks; the element is what actually knows. That
+      matters because playback can stop without anyone clicking — an incoming
+      call, a media-session interrupt, a stalled range request — and the control
+      would otherwise keep showing a pause icon over silence.
+    */
     if (audio.paused) {
       audio.volume = MUSIC_VOLUME;
-      void audio
-        .play()
-        .then(() => {
-          setMusicPlaying(true);
-          try {
-            localStorage.setItem(MUSIC_KEY, 'on');
-          } catch {
-            /* private mode */
-          }
-        })
-        .catch(() => {
-          // Autoplay policy or a missing file; leave the control in its off state.
-          setMusicPlaying(false);
+      void audio.play().catch(() => {
+        /*
+          A refusal is normal and not always tied to a missing gesture: iOS in Low
+          Power Mode rejects play() even inside a real tap. Say so rather than
+          leaving a button that visibly does nothing.
+        */
+        toast.error('Your browser blocked playback.', {
+          description: 'Low Power Mode on iOS is the usual cause.',
         });
+      });
     } else {
       audio.pause();
-      setMusicPlaying(false);
-      try {
-        localStorage.setItem(MUSIC_KEY, 'off');
-      } catch {
-        /* private mode */
-      }
     }
   }, [hasMusic]);
 
@@ -182,6 +179,9 @@ export function AudioProvider({ children }: { children: ReactNode }) {
           src={playlist[trackIndex]?.src}
           preload="none"
           onEnded={nextTrack}
+          onPlay={() => setMusicPlaying(true)}
+          onPause={() => setMusicPlaying(false)}
+          onError={() => setMusicPlaying(false)}
           // Never `autoPlay` — see the note above.
         />
       ) : null}

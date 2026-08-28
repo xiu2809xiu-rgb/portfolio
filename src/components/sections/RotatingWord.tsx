@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import { AnimatePresence, motion } from 'motion/react';
+import { useStillness } from '@/lib/use-stillness';
 import { cn } from '@/lib/utils';
 
 interface RotatingWordProps {
@@ -18,7 +19,7 @@ interface RotatingWordProps {
  * reduced-motion visitors it simply prints the first phrase and stops.
  */
 export function RotatingWord({ words, intervalMs = 2600, className }: RotatingWordProps) {
-  const reduced = useReducedMotion();
+  const reduced = useStillness();
   const [index, setIndex] = useState(0);
 
   useEffect(() => {

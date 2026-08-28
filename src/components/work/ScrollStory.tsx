@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
-import { motion, useReducedMotion } from 'motion/react';
+import { motion } from 'motion/react';
+import { useStillness } from '@/lib/use-stillness';
 import { cn } from '@/lib/utils';
 import type { Screenshot } from '@/content/types';
 
@@ -34,7 +35,7 @@ interface ScrollStoryProps {
  * the version this was designed around.
  */
 export function ScrollStory({ screenshots, beats }: ScrollStoryProps) {
-  const reduced = useReducedMotion();
+  const reduced = useStillness();
   const [active, setActive] = useState(0);
   const beatRefs = useRef<(HTMLDivElement | null)[]>([]);
 
