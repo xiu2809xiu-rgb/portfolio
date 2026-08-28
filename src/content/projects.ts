@@ -32,6 +32,7 @@ export const projects: readonly Project[] = [
       '🚫 Drops untraceable claims',
     ],
     stack: ['React', 'TypeScript', 'WebGL', 'Python', 'AWS', 'Vercel', 'Render'],
+    preview: '/video/work/smartrecap.mp4',
     /* Captured from the live demo — see scripts/capture-smartrecap.mjs. */
     screenshots: [
       { src: '/img/work/smartrecap/landing.jpg', title: 'Landing', url: 'smartrecap.vercel.app' },
@@ -190,6 +191,7 @@ export const projects: readonly Project[] = [
       '❓ FAQ search',
     ],
     stack: ['Python', 'Flask', 'Jinja2', 'SQLAlchemy', 'MySQL', 'Bootstrap 5', 'JavaScript', 'HTML5/CSS3'],
+    preview: '/video/work/singink-support.mp4',
     screenshots: [
       { src: '/img/work/ticketing/support-center.jpg', title: 'Support Center', url: 'singink.com/support' },
       { src: '/img/work/ticketing/create-ticket.jpg', title: 'Create Ticket', url: 'singink.com/support/new' },
@@ -326,6 +328,7 @@ export const projects: readonly Project[] = [
       '🔗 Social links',
     ],
     stack: ['HTML5', 'CSS3', 'JavaScript', 'Bootstrap 5', 'Figma', 'Instagram API', 'Google Calendar'],
+    preview: '/video/work/table-tennis-cca-website.mp4',
     screenshots: [
       { src: '/img/work/cca/homepage.jpg', title: 'Homepage Hero', url: 'nyp-tabletennis.com' },
       { src: '/img/work/cca/why-join-us.jpg', title: 'Why Join Us', url: 'nyp-tabletennis.com/#why' },

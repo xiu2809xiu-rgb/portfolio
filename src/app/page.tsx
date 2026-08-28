@@ -2,7 +2,7 @@ import { AboutSection } from '@/components/sections/AboutSection';
 import { AchievementsSection } from '@/components/sections/AchievementsSection';
 import { ContactSection } from '@/components/sections/ContactSection';
 import { ExperienceSection } from '@/components/sections/ExperienceSection';
-import { FeaturedWork } from '@/components/sections/FeaturedWork';
+import { WorkPortal } from '@/components/sections/WorkPortal';
 import { HeroSection } from '@/components/sections/HeroSection';
 import { MarqueeStrip } from '@/components/sections/MarqueeStrip';
 import { ProcessSection } from '@/components/sections/ProcessSection';
@@ -20,7 +20,7 @@ export default function HomePage() {
       <AboutSection />
       <SkillsSection />
       <StackCloud />
-      <FeaturedWork />
+      <WorkPortal />
       <ExperienceSection />
       <ProcessSection />
       <AchievementsSection />

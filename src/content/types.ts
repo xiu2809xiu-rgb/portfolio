@@ -88,6 +88,13 @@ export interface Project {
   readonly stack: readonly string[];
   /** Empty where no imagery exists yet; cards fall back to a text treatment. */
   readonly screenshots: readonly Screenshot[];
+  /**
+   * Silent, looping MP4 under `public/video/work/`, played on the work-carousel
+   * card. Built from the screenshots by `scripts/build-previews.mjs`, or drop in
+   * a real screen recording at the same path. Omitted where there is nothing to
+   * show — the card then uses the first screenshot, or a text treatment.
+   */
+  readonly preview?: string;
   /** Optional scroll-driven walkthrough; falls back to the gallery if absent. */
   readonly story?: readonly StoryBeat[];
   readonly caseStudy: readonly CaseStudySection[];
