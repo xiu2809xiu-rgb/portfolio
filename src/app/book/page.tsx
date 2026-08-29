@@ -27,8 +27,8 @@ const assurancesFor = (live: boolean) => [
   live
     ? {
         icon: Zap,
-        title: 'Confirmed instantly',
-        body: 'No back-and-forth. Pick a slot and the invite is created the moment you submit.',
+        title: 'Held while I answer',
+        body: 'Your slot is reserved the moment you submit, and I confirm it myself — usually the same day.',
       }
     : {
         icon: Zap,
@@ -64,7 +64,7 @@ export default function BookPage() {
           Internships, project questions, a code review, or just a conversation about building
           things.{' '}
           {live
-            ? "Pick a length, pick a slot, and you’ll get a calendar invite by email."
+            ? "Pick a length and a slot. It is held for you straight away, and I’ll confirm it myself — you’ll hear back either way."
             : "Pick a length and a slot — this calendar is in demo mode at the moment, so I’ll confirm by email."}
         </p>
       </div>

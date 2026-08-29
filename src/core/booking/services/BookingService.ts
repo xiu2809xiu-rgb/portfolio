@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import { DateTime } from 'luxon';
 import { SchedulingPolicy } from '../config/SchedulingPolicy';
 import { Attendee, type AttendeeInput } from '../domain/Attendee';
@@ -39,6 +39,8 @@ export class BookingService {
     private readonly repository: BookingRepositoryPort,
     private readonly notifier: NotifierPort,
     private readonly clock: ClockPort,
+    /** Absolute site origin, used to build the approve/decline link. */
+    private readonly siteUrl: string,
   ) {}
 
   async create(command: CreateBookingCommand): Promise<Booking> {
@@ -88,12 +90,15 @@ export class BookingService {
       throw new SlotUnavailableError('That slot is no longer available. Please choose another.');
     }
 
-    const booking = Booking.schedule({
+    const now = this.clock.now();
+    const booking = Booking.request({
       id: randomUUID(),
       reference: BookingService.generateReference(),
       slot,
       attendee,
-      createdAt: this.clock.now(),
+      actionToken: randomBytes(24).toString('base64url'),
+      holdExpiresAt: this.policy.holdExpiresFrom(now),
+      createdAt: now,
     });
 
     // Claim the slot first so a concurrent request loses the race here, not on
@@ -109,10 +114,99 @@ export class BookingService {
       throw error;
     }
 
-    // A failed email must not fail the booking — the session is already real.
-    await this.notifier.bookingConfirmed(booking).catch(() => undefined);
+    // A failed email must not fail the request — the hold is already real.
+    await this.notifier
+      .bookingRequested(booking, this.manageUrl(booking))
+      .catch(() => undefined);
 
     return booking;
+  }
+
+  /** Where Richie answers a request. Carries the token, so it is not guessable. */
+  private manageUrl(booking: Booking): string {
+    const base = this.siteUrl.replace(/\/$/, '');
+    return `${base}/book/requests/${booking.reference}?token=${booking.actionToken}`;
+  }
+
+  /**
+   * Turns a held request into an agreed meeting.
+   *
+   * The token is compared in constant time. It is a bearer credential sitting in
+   * an inbox, and a timing oracle on a six-character reference plus a token is a
+   * cheap thing to remove.
+   */
+  async approve(reference: string, token: string): Promise<Booking> {
+    const booking = await this.requirePendingRequest(reference, token);
+
+    if (booking.calendarEventId) {
+      await this.calendar.confirmEvent(booking.calendarEventId);
+    }
+    booking.approve();
+    await this.repository.save(booking);
+    await this.notifier.bookingConfirmed(booking).catch(() => undefined);
+    return booking;
+  }
+
+  async decline(reference: string, token: string): Promise<Booking> {
+    const booking = await this.requirePendingRequest(reference, token);
+
+    if (booking.calendarEventId) {
+      await this.calendar.cancelEvent(booking.calendarEventId).catch(() => undefined);
+    }
+    booking.decline();
+    await this.repository.save(booking);
+    await this.notifier.bookingDeclined(booking).catch(() => undefined);
+    return booking;
+  }
+
+  /**
+   * Releases requests nobody answered in time.
+   *
+   * Run lazily from the availability read rather than on a schedule: a lapsed
+   * hold only matters at the moment someone looks at the calendar, and a
+   * serverless deployment has nowhere reliable to run a timer. The sweep is a
+   * no-op — one indexed query — whenever there is nothing to release.
+   */
+  async releaseLapsed(): Promise<number> {
+    const lapsed = await this.repository.findLapsed(this.clock.now());
+
+    for (const booking of lapsed) {
+      if (booking.calendarEventId) {
+        await this.calendar.cancelEvent(booking.calendarEventId).catch(() => undefined);
+      }
+      booking.expire();
+      await this.repository.save(booking);
+      await this.notifier.bookingExpired(booking).catch(() => undefined);
+    }
+
+    return lapsed.length;
+  }
+
+  /** Shared by approve and decline: same lookup, same refusals, same order. */
+  private async requirePendingRequest(reference: string, token: string): Promise<Booking> {
+    const booking = await this.findByReference(reference);
+
+    if (!BookingService.tokensMatch(booking.actionToken, token)) {
+      throw new BookingNotFoundError(`No booking found for reference ${reference}.`);
+    }
+
+    if (!booking.isPending) {
+      throw new BookingValidationError(`This request has already been ${booking.status}.`);
+    }
+
+    if (booking.hasLapsed(this.clock.now())) {
+      throw new SlotUnavailableError(
+        'This request was held for its full window and has expired. The slot is free again.',
+      );
+    }
+
+    return booking;
+  }
+
+  private static tokensMatch(expected: string, provided: string): boolean {
+    const a = Buffer.from(expected);
+    const b = Buffer.from(provided);
+    return a.length === b.length && timingSafeEqual(a, b);
   }
 
   async findByReference(reference: string): Promise<Booking> {

@@ -21,6 +21,8 @@ export interface SchedulingPolicyOptions {
   bookingHorizonDays?: number;
   bufferMinutes?: number;
   maxPerDay?: number;
+  /** Hours a request is held while it waits for approval. */
+  approvalWindowHours?: number;
 }
 
 /**
@@ -39,6 +41,7 @@ export class SchedulingPolicy {
   readonly bookingHorizonDays: number;
   readonly bufferMinutes: number;
   readonly maxPerDay: number;
+  readonly approvalWindowHours: number;
 
   constructor(options: SchedulingPolicyOptions = {}) {
     this.timezone = options.timezone ?? 'Asia/Singapore';
@@ -52,6 +55,7 @@ export class SchedulingPolicy {
     this.bookingHorizonDays = options.bookingHorizonDays ?? 60;
     this.bufferMinutes = options.bufferMinutes ?? 0;
     this.maxPerDay = options.maxPerDay ?? 4;
+    this.approvalWindowHours = options.approvalWindowHours ?? 24;
   }
 
   /** Reads overrides from the environment so hours can change without a redeploy. */
@@ -79,11 +83,17 @@ export class SchedulingPolicy {
       bookingHorizonDays: int(env.BOOKING_HORIZON_DAYS, 60),
       bufferMinutes: int(env.BOOKING_BUFFER_MINUTES, 0),
       maxPerDay: int(env.BOOKING_MAX_PER_DAY, 4),
+      approvalWindowHours: int(env.BOOKING_APPROVAL_WINDOW_HOURS, 24),
     });
   }
 
   isWorkingDay(day: DateTime): boolean {
     return this.workingDays.includes(day.setZone(this.timezone).weekday as Weekday);
+  }
+
+  /** When an unanswered request stops holding its slot. */
+  holdExpiresFrom(now: DateTime): DateTime {
+    return now.plus({ hours: this.approvalWindowHours });
   }
 
   /** Earliest instant that may be booked, given the notice requirement. */
@@ -147,6 +157,7 @@ export class SchedulingPolicy {
       slotIntervalMinutes: this.slotIntervalMinutes,
       minimumNoticeMinutes: this.minimumNoticeMinutes,
       bookingHorizonDays: this.bookingHorizonDays,
+      approvalWindowHours: this.approvalWindowHours,
       durations: Duration.all().map((duration) => duration.minutes),
     };
   }

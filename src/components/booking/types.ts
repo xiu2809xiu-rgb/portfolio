@@ -12,12 +12,16 @@ export interface AvailabilitySlot {
 
 export interface PolicyConfig {
   timezone: string;
-  workingDays: number[];
-  windows: { from: string; to: string }[];
+  /* readonly throughout: this crosses the server/client boundary as data, and
+     nothing on the client has any business mutating the policy it was handed. */
+  workingDays: readonly number[];
+  windows: readonly { from: string; to: string }[];
   slotIntervalMinutes: number;
   minimumNoticeMinutes: number;
   bookingHorizonDays: number;
-  durations: DurationMinutes[];
+  /** Hours a request is held while it waits for Richie's answer. */
+  approvalWindowHours: number;
+  durations: readonly DurationMinutes[];
 }
 
 export interface DayResponse {
@@ -55,6 +59,8 @@ export interface BookingConfirmation {
   end: string;
   duration: number;
   meetingUrl: string | null;
+  /** ISO instant the hold lapses if Richie has not answered. */
+  holdExpiresAt: string | null;
   live: boolean;
 }
 

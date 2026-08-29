@@ -115,6 +115,14 @@ export class GoogleCalendarAdapter implements CalendarPort {
     const requestBody: calendar_v3.Schema$Event = {
       summary: booking.title,
       description: this.describe(booking),
+      /*
+        Written as tentative, which is what makes this a hold rather than a
+        commitment. Google counts tentative events as busy in free/busy, so the
+        slot is genuinely reserved while Richie decides — but nothing on the
+        calendar claims the meeting is happening, and confirmEvent() promotes it
+        only once he has said yes.
+      */
+      status: 'tentative',
       start: { dateTime: booking.slot.start.toISO()!, timeZone: 'UTC' },
       end: { dateTime: booking.slot.end.toISO()!, timeZone: 'UTC' },
       attendees: [
@@ -151,8 +159,13 @@ export class GoogleCalendarAdapter implements CalendarPort {
       const response = await this.calendar().events.insert({
         calendarId: this.config.calendarId,
         requestBody,
-        // `all` is what actually emails the invite to the attendee.
-        sendUpdates: 'all',
+        /*
+          Deliberately not 'all'. The attendee gets our own "request received"
+          email; a Google invitation at this point would read as a confirmed
+          meeting, which is precisely the false impression this flow exists to
+          avoid. The invitation goes out from confirmEvent().
+        */
+        sendUpdates: 'none',
         conferenceDataVersion: this.config.createMeetLink ? 1 : 0,
       });
 
@@ -166,6 +179,27 @@ export class GoogleCalendarAdapter implements CalendarPort {
       if (error instanceof CalendarUnavailableError) throw error;
       throw new CalendarUnavailableError(
         `Could not create the calendar event: ${(error as Error).message}`,
+      );
+    }
+  }
+
+  /**
+   * Promotes a held event to a real one and invites the attendee.
+   *
+   * `sendUpdates: 'all'` here is what finally puts the invitation in their
+   * inbox — the first message that says the meeting is actually happening.
+   */
+  async confirmEvent(eventId: string): Promise<void> {
+    try {
+      await this.calendar().events.patch({
+        calendarId: this.config.calendarId,
+        eventId,
+        requestBody: { status: 'confirmed' },
+        sendUpdates: 'all',
+      });
+    } catch (error) {
+      throw new CalendarUnavailableError(
+        `Could not confirm the calendar event: ${(error as Error).message}`,
       );
     }
   }

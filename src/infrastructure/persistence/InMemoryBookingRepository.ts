@@ -53,6 +53,10 @@ export class InMemoryBookingRepository implements BookingRepositoryPort {
     ).length;
   }
 
+  async findLapsed(now: DateTime): Promise<Booking[]> {
+    return [...this.byReference.values()].filter((booking) => booking.hasLapsed(now));
+  }
+
   async markCancelled(reference: string): Promise<void> {
     this.byReference.get(reference)?.cancel();
   }

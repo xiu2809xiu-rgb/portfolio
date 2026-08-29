@@ -25,6 +25,10 @@ export const bookings = pgTable(
     calendarEventId: varchar('calendar_event_id', { length: 256 }),
     meetingUrl: text('meeting_url'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    /* Bearer token behind the approve/decline links. Never leaves Richie's inbox. */
+    actionToken: varchar('action_token', { length: 64 }).notNull().default(''),
+    /* When an unanswered request stops holding its slot. */
+    holdExpiresAt: timestamp('hold_expires_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
     uniqueIndex('bookings_reference_idx').on(table.reference),
@@ -40,7 +44,7 @@ export const bookings = pgTable(
     */
     uniqueIndex('bookings_live_slot_idx')
       .on(table.startsAt)
-      .where(sql`${table.status} = 'confirmed'`),
+      .where(sql`${table.status} in ('pending', 'confirmed')`),
   ],
 );
 

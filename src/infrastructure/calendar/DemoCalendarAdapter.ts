@@ -50,6 +50,10 @@ export class DemoCalendarAdapter implements CalendarPort {
     return { eventId: `demo-${booking.reference}`, meetingUrl: null };
   }
 
+  async confirmEvent(): Promise<void> {
+    // Nothing to promote — no event was ever created upstream.
+  }
+
   async cancelEvent(): Promise<void> {
     // Nothing to cancel — no event was ever created upstream.
   }

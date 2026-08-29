@@ -64,6 +64,13 @@ export function Confirmation({
     downloadIcs(`session-${confirmation.reference}`, ics);
   };
 
+  /* The visitor's own timezone, so "by Tuesday 6pm" means their Tuesday. */
+  const holdLabel = confirmation.holdExpiresAt
+    ? DateTime.fromISO(confirmation.holdExpiresAt)
+        .setZone(viewerTimezone)
+        .toFormat("cccc d LLLL 'at' h:mm a")
+    : null;
+
   const googleCalendarUrl = (() => {
     const format = (iso: string) => DateTime.fromISO(iso).toUTC().toFormat("yyyyLLdd'T'HHmmss'Z'");
     const params = new URLSearchParams({
@@ -81,19 +88,33 @@ export function Confirmation({
         <Check className="size-7 text-lime" strokeWidth={2.5} />
       </div>
 
+      {/*
+        "Requested", not "confirmed". The slot is genuinely held — nobody else can
+        take it — but Richie has not agreed to it yet, and a screen that says
+        confirmed makes a promise on his behalf that he may not keep. The one
+        thing worth being precise about here is the difference between a slot
+        being reserved and a person having said yes.
+      */}
       <h3 className="font-heading text-2xl font-extrabold tracking-tight sm:text-3xl">
-        You&rsquo;re on the calendar
+        Your slot is held
       </h3>
 
       <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-muted-foreground">
-        Thanks {attendeeName.split(/\s+/)[0]} — your {confirmation.duration} minute session is
-        confirmed for <strong className="text-foreground">{viewerLabel}</strong>
-        {viewerTimezone !== ownerTimezone ? ` (${ownerLabel} my time)` : ''}.
+        Thanks {attendeeName.split(/\s+/)[0]} — I&rsquo;ve asked Richie about{' '}
+        {confirmation.duration} minutes on <strong className="text-foreground">{viewerLabel}</strong>
+        {viewerTimezone !== ownerTimezone ? ` (${ownerLabel} his time)` : ''}. Nobody else can take
+        that time while he decides.
       </p>
 
       {confirmation.live ? (
-        <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-          A Google Calendar invite is on its way to your inbox.
+        <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
+          He confirms each session himself, so you&rsquo;ll hear back either way
+          {holdLabel ? (
+            <>
+              {' '}by <strong className="text-foreground">{holdLabel}</strong>
+            </>
+          ) : null}
+          . The calendar invitation arrives once he says yes.
         </p>
       ) : (
         <p className="mx-auto mt-3 max-w-md rounded-xl border border-warning/30 bg-warning/10 p-3 text-xs leading-relaxed text-warning">
@@ -123,7 +144,18 @@ export function Confirmation({
         </button>
       </div>
 
-      <div className="mt-7 flex flex-wrap items-center justify-center gap-2">
+      {/*
+        Hidden while the request is only held. A .ics download or a "Join link"
+        is a meeting the visitor can put in their own calendar and turn up to —
+        which is the same false promise as the old heading, just in a file. They
+        appear once Richie has actually approved it.
+      */}
+      <div
+        className={cn(
+          'mt-7 flex-wrap items-center justify-center gap-2',
+          confirmation.status === 'confirmed' ? 'flex' : 'hidden',
+        )}
+      >
         <Button onClick={saveIcs} variant="outline" className="gap-2">
           <Calendar className="size-4" />
           Download .ics

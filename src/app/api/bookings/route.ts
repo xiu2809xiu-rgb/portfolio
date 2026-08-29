@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
 
   // Silently accept the honeypot so bots do not learn they were caught.
   if (parsed.data.company) {
-    return NextResponse.json({ reference: 'RK-000000', status: 'confirmed' }, { status: 201 });
+    return NextResponse.json({ reference: 'RK-000000', status: 'pending' }, { status: 201 });
   }
 
   try {
@@ -93,6 +93,9 @@ export async function POST(request: NextRequest) {
         end: booking.slot.end.toISO(),
         duration: booking.duration.minutes,
         meetingUrl: booking.meetingUrl,
+        /* The slot is held until this instant, then released automatically. The
+           confirmation screen prints it so the visitor knows how long to wait. */
+        holdExpiresAt: booking.holdExpiresAt.toISO(),
         // The UI tells the visitor whether a real invite is on its way.
         live: container.calendar.isLive,
       },

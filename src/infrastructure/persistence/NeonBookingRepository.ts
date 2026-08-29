@@ -1,5 +1,5 @@
 import { neon } from '@neondatabase/serverless';
-import { and, eq, gte, lt, lte, sql } from 'drizzle-orm';
+import { and, eq, gte, inArray, lt, lte, sql } from 'drizzle-orm';
 import { drizzle, type NeonHttpDatabase } from 'drizzle-orm/neon-http';
 import { DateTime } from 'luxon';
 import { Booking, type BookingSnapshot } from '@/core/booking/domain/Booking';
@@ -47,6 +47,8 @@ export class NeonBookingRepository implements BookingRepositoryPort {
       calendarEventId: snapshot.calendarEventId,
       meetingUrl: snapshot.meetingUrl,
       createdAt: new Date(snapshot.createdAt),
+      actionToken: snapshot.actionToken,
+      holdExpiresAt: new Date(snapshot.holdExpiresAt),
     };
 
     /*
@@ -98,7 +100,7 @@ export class NeonBookingRepository implements BookingRepositoryPort {
       .from(bookings)
       .where(
         and(
-          eq(bookings.status, 'confirmed'),
+          inArray(bookings.status, ['pending', 'confirmed']),
           lt(bookings.startsAt, to.toJSDate()),
           sql`${bookings.endsAt} > ${from.toJSDate()}`,
         ),
@@ -116,13 +118,22 @@ export class NeonBookingRepository implements BookingRepositoryPort {
       .from(bookings)
       .where(
         and(
-          eq(bookings.status, 'confirmed'),
+          inArray(bookings.status, ['pending', 'confirmed']),
           gte(bookings.startsAt, start.toJSDate()),
           lte(bookings.startsAt, end.toJSDate()),
         ),
       );
 
     return rows[0]?.count ?? 0;
+  }
+
+  async findLapsed(now: DateTime): Promise<Booking[]> {
+    const rows = await this.db
+      .select()
+      .from(bookings)
+      .where(and(eq(bookings.status, 'pending'), lte(bookings.holdExpiresAt, now.toJSDate())));
+
+    return rows.map((row) => Booking.fromSnapshot(NeonBookingRepository.toSnapshot(row)));
   }
 
   async markCancelled(reference: string): Promise<void> {
@@ -132,6 +143,14 @@ export class NeonBookingRepository implements BookingRepositoryPort {
       .where(eq(bookings.reference, reference));
   }
 
+  /** The column is free text; anything unrecognised is treated as terminal. */
+  private static toStatus(value: string): BookingSnapshot['status'] {
+    const known = ['pending', 'confirmed', 'declined', 'expired', 'cancelled'] as const;
+    return (known as readonly string[]).includes(value)
+      ? (value as BookingSnapshot['status'])
+      : 'cancelled';
+  }
+
   private static toSnapshot(row: BookingRow): BookingSnapshot {
     return {
       id: row.id,
@@ -139,7 +158,7 @@ export class NeonBookingRepository implements BookingRepositoryPort {
       startsAt: row.startsAt.toISOString(),
       endsAt: row.endsAt.toISOString(),
       durationMinutes: Number.parseInt(row.durationMinutes, 10),
-      status: row.status === 'cancelled' ? 'cancelled' : 'confirmed',
+      status: NeonBookingRepository.toStatus(row.status),
       attendeeName: row.attendeeName,
       attendeeEmail: row.attendeeEmail,
       topic: row.topic,
@@ -148,6 +167,8 @@ export class NeonBookingRepository implements BookingRepositoryPort {
       calendarEventId: row.calendarEventId,
       meetingUrl: row.meetingUrl,
       createdAt: row.createdAt.toISOString(),
+      actionToken: row.actionToken,
+      holdExpiresAt: row.holdExpiresAt.toISOString(),
     };
   }
 }

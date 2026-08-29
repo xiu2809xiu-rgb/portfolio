@@ -53,6 +53,19 @@ export class Container {
   readonly bookings: BookingService;
 
   private constructor(env: NodeJS.ProcessEnv) {
+    /*
+      Read from the environment rather than importing `@/lib/site`: the container
+      is constructed inside request handlers where VERCEL_URL is the only thing
+      that knows which deployment is answering, and a preview build must build
+      its approve links against itself, not against production.
+    */
+    const siteUrl = (
+      env.NEXT_PUBLIC_SITE_URL ||
+      (env.VERCEL_PROJECT_PRODUCTION_URL && `https://${env.VERCEL_PROJECT_PRODUCTION_URL}`) ||
+      (env.VERCEL_URL && `https://${env.VERCEL_URL}`) ||
+      'http://localhost:3000'
+    ).replace(/\/$/, '');
+
     this.policy = SchedulingPolicy.fromEnv(env);
     this.clock = new SystemClock();
 
@@ -74,6 +87,7 @@ export class Container {
       this.repository,
       this.notifier,
       this.clock,
+      siteUrl,
     );
   }
 

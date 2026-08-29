@@ -18,6 +18,19 @@ export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams;
 
   try {
+    /*
+      Release any hold nobody answered in time, before reading availability.
+
+      A lapsed request only matters at the moment someone looks at the calendar,
+      and serverless has nowhere dependable to run a timer — so the sweep happens
+      here rather than on a schedule. It is one indexed query when there is
+      nothing to release, and it guarantees the grid never shows a slot as taken
+      by a request that has already run out.
+    */
+    await container.bookings.releaseLapsed().catch((error) => {
+      console.error('[availability] could not release lapsed holds', error);
+    });
+
     const duration = Duration.parse(params.get('duration'));
     const month = params.get('month');
     const date = params.get('date');

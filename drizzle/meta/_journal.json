@@ -15,6 +15,13 @@
       "when": 1787944038370,
       "tag": "0001_unique_live_slot",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788015667641,
+      "tag": "0002_approval_holds",
+      "breakpoints": true
     }
   ]
 }
