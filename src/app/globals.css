@@ -253,6 +253,78 @@
   }
 
   /* Frosted surface used for cards, the nav, and the booking panel. */
+  /* ── Toasts ───────────────────────────────────────────────────────────────
+     sonner's default panel is a light card with its own semantic palette, which
+     lands on this site as a white rectangle over near-black. These rules give it
+     the same treatment as every other raised surface here — glass fill, hairline
+     border, a lime rule down the leading edge — so a confirmation reads as part
+     of the page rather than as browser furniture.
+
+     Targets sonner's own data attributes rather than its class names, which are
+     not part of its public API and change between releases.
+  */
+  .cn-toast {
+    --toast-accent: var(--brand-lime);
+
+    gap: 0.75rem;
+    padding: 0.9rem 1rem 0.9rem 1.15rem;
+    border: 1px solid var(--brand-hairline) !important;
+    border-left: 2px solid var(--toast-accent) !important;
+    border-radius: var(--radius-lg) !important;
+    background: linear-gradient(
+      180deg,
+      rgb(255 255 255 / 0.05) 0%,
+      rgb(255 255 255 / 0.02) 100%
+    ),
+    var(--brand-ink-raised) !important;
+    color: var(--foreground) !important;
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    box-shadow:
+      0 18px 40px -18px rgb(0 0 0 / 0.9),
+      0 0 0 1px rgb(0 0 0 / 0.4);
+  }
+
+  .cn-toast[data-type="error"] {
+    --toast-accent: #ff5c5c;
+  }
+
+  /* The label carries the same mono-uppercase voice as the section eyebrows. */
+  .cn-toast [data-title] {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--foreground);
+  }
+
+  .cn-toast [data-description] {
+    margin-top: 0.3rem;
+    font-family: var(--font-sans);
+    font-size: 0.8rem;
+    line-height: 1.5;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--muted-foreground);
+  }
+
+  .cn-toast [data-icon] {
+    color: var(--toast-accent);
+  }
+
+  .cn-toast [data-close-button] {
+    border: 1px solid var(--brand-hairline);
+    background: var(--brand-ink);
+    color: var(--muted-foreground);
+    transition: color 0.3s var(--ease-out-expo), border-color 0.3s var(--ease-out-expo);
+  }
+
+  .cn-toast [data-close-button]:hover {
+    color: var(--foreground);
+    border-color: var(--toast-accent);
+  }
+
   .glass {
     background: linear-gradient(
       180deg,

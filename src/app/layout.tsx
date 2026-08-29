@@ -170,7 +170,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <SiteFooter />
         <AudioControl />
         </AudioProvider>
-        <Toaster position="bottom-right" richColors closeButton />
+        {/* No richColors: it swaps in sonner's own semantic palette, which renders
+            as a white card on this near-black page. The toast is themed in
+            globals.css under .cn-toast instead. */}
+        <Toaster position="bottom-right" closeButton />
         <Analytics />
         <SpeedInsights />
       </body>

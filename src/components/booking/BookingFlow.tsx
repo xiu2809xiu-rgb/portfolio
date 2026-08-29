@@ -156,9 +156,12 @@ export function BookingFlow({ initialConfig, calendarLive }: BookingFlowProps) {
         }
 
         setAttendeeName(details.name);
-        setConfirmation(payload as BookingConfirmation);
+        const confirmed = payload as BookingConfirmation;
+        setConfirmation(confirmed);
         setStep('done');
-        toast.success('Booking confirmed');
+        toast.success('Booking confirmed', {
+          description: `Reference ${confirmed.reference} — a calendar invite is on its way.`,
+        });
       } catch {
         setError('Could not reach the server. Check your connection and try again.');
       } finally {
