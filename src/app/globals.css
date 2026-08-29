@@ -254,11 +254,23 @@
 
   /* Frosted surface used for cards, the nav, and the booking panel. */
   /* ── Toasts ───────────────────────────────────────────────────────────────
-     sonner's default panel is a light card with its own semantic palette, which
-     lands on this site as a white rectangle over near-black. These rules give it
-     the same treatment as every other raised surface here — glass fill, hairline
-     border, a coloured rule down the leading edge — so a message reads as part of
-     the page rather than as browser furniture.
+     Rebuilt against Apple's Human Interface Guidelines for notifications and the
+     general toast literature, both of which contradicted the first attempt:
+
+     · "Timely, high-value information people can understand at a glance."
+       A 0.7rem uppercase label tracked out to 0.14em is the least glanceable
+       setting of a short string there is — the eye reads word shapes, and
+       uppercase destroys them. The title is sentence-case sans now. That breaks
+       from the mono-uppercase eyebrows elsewhere on the site deliberately: those
+       are labels you scan past, this is a message you must read once.
+
+     · Apple frames a notification as a piece of *material* — a translucent pane
+       that borrows the colour beneath it — not as a card with chrome. So the
+       hard 2px accent rule is gone. Colour survives only in the icon and a very
+       low-opacity wash, which is how Apple signals type without shouting.
+
+     · Icon in a rounded tile rather than a bare glyph, which is what gives an
+       Apple notification its anchor at the leading edge.
 
      Targets sonner's own data attributes rather than its class names, which are
      not part of its public API and change between releases.
@@ -268,41 +280,43 @@
     /*
       Its own muted grey rather than --muted-foreground. That token is tuned for
       body copy on the page background; on the lighter toast surface, and behind
-      sonner's exit fade, it drops to the edge of legibility. This sits at about
-      7.7:1 against the panel, comfortably past AA and into AAA, so it stays
-      readable even mid-animation.
+      sonner's exit fade, it drops to the edge of legibility. This measures
+      7.7:1 against the panel — AAA, not scraping past AA.
     */
-    --toast-muted: #9aa5b1;
+    --toast-muted: #a7b1bd;
 
     position: relative;
-    gap: 0.75rem;
-    /* Right padding clears the close button so text never runs under it. */
-    padding: 0.9rem 2.4rem 0.9rem 1.15rem;
-    border: 1px solid var(--brand-hairline) !important;
-    border-left: 2px solid var(--toast-accent) !important;
-    border-radius: var(--radius-lg) !important;
-    background: linear-gradient(
-      180deg,
-      rgb(255 255 255 / 0.05) 0%,
-      rgb(255 255 255 / 0.02) 100%
-    ),
-    var(--brand-ink-raised) !important;
+    align-items: flex-start;
+    gap: 0.7rem;
+    padding: 0.85rem 2.5rem 0.9rem 0.85rem;
+    border: 1px solid rgb(255 255 255 / 0.09) !important;
+    /* Apple's notification radius is large relative to the card. */
+    border-radius: 1.15rem !important;
+    background:
+      radial-gradient(
+        120% 140% at 0% 0%,
+        color-mix(in oklab, var(--toast-accent) 9%, transparent) 0%,
+        transparent 60%
+      ),
+      rgb(22 26 33 / 0.82) !important;
     color: var(--foreground) !important;
-    backdrop-filter: blur(14px) saturate(140%);
-    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    backdrop-filter: blur(28px) saturate(180%);
+    -webkit-backdrop-filter: blur(28px) saturate(180%);
+    /* Wide, soft, low-opacity — a pane floating above the page, not a box on it. */
     box-shadow:
-      0 18px 40px -18px rgb(0 0 0 / 0.9),
-      0 0 0 1px rgb(0 0 0 / 0.4);
+      0 24px 60px -20px rgb(0 0 0 / 0.75),
+      0 2px 10px -4px rgb(0 0 0 / 0.5),
+      inset 0 1px 0 0 rgb(255 255 255 / 0.06);
   }
 
   .cn-toast[data-type="error"] {
-    --toast-accent: #ff5c5c;
+    --toast-accent: #ff6b6b;
   }
 
   /*
-    Anything that is underway rather than finished. A green tick is a claim that
-    something completed, so a state that is merely held or in progress gets the
-    aqua accent and its own icon instead.
+    Anything underway rather than finished. A green tick is a claim that something
+    completed, so a state that is merely held or in progress takes the aqua accent
+    and its own icon.
   */
   .cn-toast[data-type="info"],
   .cn-toast[data-type="loading"] {
@@ -313,66 +327,77 @@
     --toast-accent: #ffc857;
   }
 
-  /* The label carries the same mono-uppercase voice as the section eyebrows. */
+  /* The icon tile: an anchor at the leading edge, the way an app icon reads. */
+  .cn-toast [data-icon] {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 1.65rem;
+    height: 1.65rem;
+    margin: 0;
+    border-radius: 0.6rem;
+    background: color-mix(in oklab, var(--toast-accent) 16%, transparent);
+    color: var(--toast-accent);
+  }
+
+  .cn-toast [data-content] {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
   .cn-toast [data-title] {
-    font-family: var(--font-mono);
-    font-size: 0.7rem;
-    font-weight: 700;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
+    font-family: var(--font-sans);
+    font-size: 0.875rem;
+    font-weight: 600;
+    letter-spacing: -0.006em;
+    line-height: 1.35;
+    text-transform: none;
     color: var(--foreground);
   }
 
   .cn-toast [data-description] {
-    margin-top: 0.35rem;
     font-family: var(--font-sans);
-    font-size: 0.8rem;
-    line-height: 1.5;
+    font-size: 0.8125rem;
+    font-weight: 400;
+    line-height: 1.45;
     letter-spacing: 0;
     text-transform: none;
     color: var(--toast-muted) !important;
   }
 
-  .cn-toast [data-icon] {
-    color: var(--toast-accent);
-  }
-
   /*
-    sonner parks the close button outside the panel's top-left corner, where it
-    reads as a stray glyph floating over the border. Anchored inside the padding
-    instead, on the side the eye ends on.
+    sonner injects its stylesheet into <head> at runtime, after this one, with a
+    selector of identical specificity — so source order hands it the win, and it
+    pins the close button to top:0 left:0 with a translate(-7px,-7px) that puts
+    it outside the panel. Hence !important: this is beating a library, not
+    papering over a specificity mistake.
   */
   .cn-toast [data-close-button] {
-    /*
-      !important is doing real work here, not papering over a specificity
-      mistake. sonner injects its own stylesheet into <head> at runtime, after
-      this one, with a selector of identical specificity — so source order hands
-      it the win, and it pins the button to top:0 left:0 with a
-      translate(-7px,-7px) that pushes it outside the panel.
-    */
     position: absolute !important;
-    top: 0.6rem !important;
-    right: 0.6rem !important;
+    top: 0.55rem !important;
+    right: 0.55rem !important;
     left: auto !important;
     transform: none !important;
-    width: 1.25rem;
-    height: 1.25rem;
-    border: 1px solid transparent;
+    width: 1.35rem;
+    height: 1.35rem;
+    border: none;
     border-radius: 999px;
     background: transparent;
     color: var(--toast-muted);
-    opacity: 0.7;
+    opacity: 0;
     transition:
-      color 0.25s var(--ease-out-expo),
-      border-color 0.25s var(--ease-out-expo),
-      opacity 0.25s var(--ease-out-expo);
+      opacity 0.2s var(--ease-out-expo),
+      background 0.2s var(--ease-out-expo),
+      color 0.2s var(--ease-out-expo);
   }
 
-  .cn-toast [data-close-button]:hover,
+  /* Apple reveals the dismiss affordance on approach rather than parking it. */
+  .cn-toast:hover [data-close-button],
   .cn-toast [data-close-button]:focus-visible {
     opacity: 1;
+    background: rgb(255 255 255 / 0.08);
     color: var(--foreground);
-    border-color: var(--brand-hairline);
   }
 
   .glass {

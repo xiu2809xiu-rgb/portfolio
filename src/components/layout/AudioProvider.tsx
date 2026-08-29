@@ -135,8 +135,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
           Power Mode rejects play() even inside a real tap. Say so rather than
           leaving a button that visibly does nothing.
         */
-        toast.error('Your browser blocked playback.', {
-          description: 'Low Power Mode on iOS is the usual cause.',
+        toast.error('Playback was blocked', {
+          description: 'Your browser refused to start audio. Low Power Mode on iOS is the usual cause.',
         });
       });
     } else {

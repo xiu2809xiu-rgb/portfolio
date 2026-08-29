@@ -31,8 +31,10 @@ export function RequestDecision({ reference, token }: { reference: string; token
           confirmation of anything, so it gets the neutral treatment rather than
           a tick that reads as "meeting booked".
         */
-        if (result.confirmed) toast.success('Confirmed', { description: result.message });
-        else toast.info('Declined', { description: result.message });
+        /* Apple: "write short, descriptive, multiword titles… avoid single-word
+           titles." A bare "Confirmed" makes the reader supply the noun. */
+        if (result.confirmed) toast.success('Session confirmed', { description: result.message });
+        else toast.info('Request declined', { description: result.message });
         router.refresh();
       } else {
         setFailure(result.message);

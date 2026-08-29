@@ -96,10 +96,12 @@ export function CommandPalette({ projects, posts }: CommandPaletteProps) {
     try {
       await navigator.clipboard.writeText(profile.email);
       setCopied(true);
-      toast.success('Email copied', { description: profile.email });
+      toast.success('Email address copied', { description: profile.email });
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      toast.error('Could not copy — your browser blocked clipboard access.');
+      toast.error('Could not copy', {
+        description: 'Your browser blocked clipboard access.',
+      });
     }
     setOpen(false);
   }, []);

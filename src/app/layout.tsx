@@ -173,7 +173,18 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         {/* No richColors: it swaps in sonner's own semantic palette, which renders
             as a white card on this near-black page. The toast is themed in
             globals.css under .cn-toast instead. */}
-        <Toaster position="bottom-right" closeButton />
+        <Toaster
+          /*
+            Top-right, not bottom-right. The toast guidance is explicit that a
+            toast must not cover important content, and at the bottom of /book it
+            sat squarely on top of the "Your timezone" assurance card. Up here it
+            clears the header and overlaps nothing.
+          */
+          position="top-right"
+          offset={88}
+          closeButton
+          duration={4500}
+        />
         <Analytics />
         <SpeedInsights />
       </body>
