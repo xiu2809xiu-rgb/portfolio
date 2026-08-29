@@ -36,19 +36,50 @@ export class ResendNotifier implements NotifierPort {
       .setZone(attendee.timezone)
       .toFormat("cccc d LLLL yyyy 'at' h:mm a (ZZZZ)");
 
-    await this.send({
-      to: attendee.email,
-      subject: `Confirmed: ${booking.duration.label} with Richie Koh`,
-      html: this.attendeeEmail(booking, whenTheirTime),
-    });
+    /*
+      Two independent messages, attempted independently.
+
+      The attendee's is by far the likelier to be rejected: until a sending
+      domain is verified, Resend will only deliver to the account holder's own
+      address, so every real visitor's confirmation bounces at the API. Awaiting
+      it first meant that rejection threw before the owner notification was even
+      attempted — and BookingService treats a failed notification as non-fatal,
+      so the whole thing vanished. The one message telling Richie a booking had
+      happened was the one guaranteed not to arrive.
+
+      Failures are logged rather than raised, for the same reason: the caller
+      swallows them, and silence is indistinguishable from success. A line in the
+      runtime log is the only signal that email is misconfigured.
+    */
+    const messages: { who: string; to: string; subject: string; html: string }[] = [
+      {
+        who: 'attendee',
+        to: attendee.email,
+        subject: `Confirmed: ${booking.duration.label} with Richie Koh`,
+        html: this.attendeeEmail(booking, whenTheirTime),
+      },
+    ];
 
     if (this.ownerEmail) {
-      await this.send({
+      messages.push({
+        who: 'owner',
         to: this.ownerEmail,
         subject: `New booking — ${attendee.name} (${booking.reference})`,
         html: this.ownerEmailBody(booking),
       });
     }
+
+    await Promise.all(
+      messages.map(async ({ who, ...message }) => {
+        try {
+          await this.send(message);
+        } catch (error) {
+          console.error(
+            `[notify] ${who} email for ${booking.reference} was not sent: ${(error as Error).message}`,
+          );
+        }
+      }),
+    );
   }
 
   private async send(message: { to: string; subject: string; html: string }): Promise<void> {
