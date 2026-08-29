@@ -2,6 +2,14 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "regions": ["sin1"],
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "www.richiekoh.dev" }],
+      "destination": "https://richiekoh.dev/:path*",
+      "permanent": true
+    }
+  ],
   "headers": [
     {
       "source": "/models/(.*)",
