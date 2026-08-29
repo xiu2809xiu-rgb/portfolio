@@ -5,6 +5,8 @@ import { Container } from '@/infrastructure/Container';
 
 export interface ActionResult {
   ok: boolean;
+  /** True only when the session was actually agreed, not merely settled. */
+  confirmed: boolean;
   message: string;
 }
 
@@ -34,13 +36,14 @@ async function answer(
 
     return {
       ok: true,
+      confirmed: booking.status === 'confirmed',
       message:
         booking.status === 'confirmed'
           ? `Confirmed. ${booking.attendee.firstName} has been sent the invitation.`
           : `Declined. ${booking.attendee.firstName} has been told, and the slot is free again.`,
     };
   } catch (error) {
-    return { ok: false, message: (error as Error).message };
+    return { ok: false, confirmed: false, message: (error as Error).message };
   }
 }
 

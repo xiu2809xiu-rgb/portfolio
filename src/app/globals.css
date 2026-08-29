@@ -257,17 +257,27 @@
      sonner's default panel is a light card with its own semantic palette, which
      lands on this site as a white rectangle over near-black. These rules give it
      the same treatment as every other raised surface here — glass fill, hairline
-     border, a lime rule down the leading edge — so a confirmation reads as part
-     of the page rather than as browser furniture.
+     border, a coloured rule down the leading edge — so a message reads as part of
+     the page rather than as browser furniture.
 
      Targets sonner's own data attributes rather than its class names, which are
      not part of its public API and change between releases.
   */
   .cn-toast {
     --toast-accent: var(--brand-lime);
+    /*
+      Its own muted grey rather than --muted-foreground. That token is tuned for
+      body copy on the page background; on the lighter toast surface, and behind
+      sonner's exit fade, it drops to the edge of legibility. This sits at about
+      7.7:1 against the panel, comfortably past AA and into AAA, so it stays
+      readable even mid-animation.
+    */
+    --toast-muted: #9aa5b1;
 
+    position: relative;
     gap: 0.75rem;
-    padding: 0.9rem 1rem 0.9rem 1.15rem;
+    /* Right padding clears the close button so text never runs under it. */
+    padding: 0.9rem 2.4rem 0.9rem 1.15rem;
     border: 1px solid var(--brand-hairline) !important;
     border-left: 2px solid var(--toast-accent) !important;
     border-radius: var(--radius-lg) !important;
@@ -289,6 +299,20 @@
     --toast-accent: #ff5c5c;
   }
 
+  /*
+    Anything that is underway rather than finished. A green tick is a claim that
+    something completed, so a state that is merely held or in progress gets the
+    aqua accent and its own icon instead.
+  */
+  .cn-toast[data-type="info"],
+  .cn-toast[data-type="loading"] {
+    --toast-accent: var(--brand-aqua);
+  }
+
+  .cn-toast[data-type="warning"] {
+    --toast-accent: #ffc857;
+  }
+
   /* The label carries the same mono-uppercase voice as the section eyebrows. */
   .cn-toast [data-title] {
     font-family: var(--font-mono);
@@ -300,29 +324,55 @@
   }
 
   .cn-toast [data-description] {
-    margin-top: 0.3rem;
+    margin-top: 0.35rem;
     font-family: var(--font-sans);
     font-size: 0.8rem;
     line-height: 1.5;
     letter-spacing: 0;
     text-transform: none;
-    color: var(--muted-foreground);
+    color: var(--toast-muted) !important;
   }
 
   .cn-toast [data-icon] {
     color: var(--toast-accent);
   }
 
+  /*
+    sonner parks the close button outside the panel's top-left corner, where it
+    reads as a stray glyph floating over the border. Anchored inside the padding
+    instead, on the side the eye ends on.
+  */
   .cn-toast [data-close-button] {
-    border: 1px solid var(--brand-hairline);
-    background: var(--brand-ink);
-    color: var(--muted-foreground);
-    transition: color 0.3s var(--ease-out-expo), border-color 0.3s var(--ease-out-expo);
+    /*
+      !important is doing real work here, not papering over a specificity
+      mistake. sonner injects its own stylesheet into <head> at runtime, after
+      this one, with a selector of identical specificity — so source order hands
+      it the win, and it pins the button to top:0 left:0 with a
+      translate(-7px,-7px) that pushes it outside the panel.
+    */
+    position: absolute !important;
+    top: 0.6rem !important;
+    right: 0.6rem !important;
+    left: auto !important;
+    transform: none !important;
+    width: 1.25rem;
+    height: 1.25rem;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--toast-muted);
+    opacity: 0.7;
+    transition:
+      color 0.25s var(--ease-out-expo),
+      border-color 0.25s var(--ease-out-expo),
+      opacity 0.25s var(--ease-out-expo);
   }
 
-  .cn-toast [data-close-button]:hover {
+  .cn-toast [data-close-button]:hover,
+  .cn-toast [data-close-button]:focus-visible {
+    opacity: 1;
     color: var(--foreground);
-    border-color: var(--toast-accent);
+    border-color: var(--brand-hairline);
   }
 
   .glass {

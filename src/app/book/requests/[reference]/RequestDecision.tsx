@@ -25,7 +25,14 @@ export function RequestDecision({ reference, token }: { reference: string; token
     startTransition(async () => {
       const result = await run();
       if (result.ok) {
-        toast.success(result.message);
+        /*
+          A green tick claims something was completed *and* went well. Approving
+          earns it; declining is equally successful as an action but is not a
+          confirmation of anything, so it gets the neutral treatment rather than
+          a tick that reads as "meeting booked".
+        */
+        if (result.confirmed) toast.success('Confirmed', { description: result.message });
+        else toast.info('Declined', { description: result.message });
         router.refresh();
       } else {
         setFailure(result.message);

@@ -159,9 +159,13 @@ export function BookingFlow({ initialConfig, calendarLive }: BookingFlowProps) {
         const confirmed = payload as BookingConfirmation;
         setConfirmation(confirmed);
         setStep('done');
-        toast.success('Slot held', {
-          description: `Reference ${confirmed.reference} — Richie confirms each session himself.`,
-        });
+        /*
+          No toast here on purpose. The step it moves to is a full-width panel
+          that already says the slot is held, prints the reference, and explains
+          what happens next — a notification repeating those same two facts is
+          noise stacked on top of the thing it is describing. Toasts are for
+          feedback that has nowhere else to appear.
+        */
       } catch {
         setError('Could not reach the server. Check your connection and try again.');
       } finally {
