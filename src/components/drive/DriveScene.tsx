@@ -63,7 +63,9 @@ export function DriveScene({ night }: { night: boolean }) {
         while the chassis sat underground. 1/60 also makes the handling identical
         on a 60Hz laptop and a 144Hz monitor.
       */}
-      <Physics timeStep={1 / 60} debug={debug} gravity={[0, -19.6, 0]}>
+      <Physics timeStep={1 / 60} debug={debug} /* Earth gravity. Doubling it to feel snappy also doubles what the springs
+         must hold, which is half of why the car sat on its belly. */
+        gravity={[0, -9.81, 0]}>
         <Ground />
         <Walls />
         <Car input={input} spawn={SPAWN} handle={handle} />

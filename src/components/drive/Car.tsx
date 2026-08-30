@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import {
@@ -44,13 +44,25 @@ const WHEEL = { radius: 0.33, halfTrack: 0.82, front: 1.02, back: -1.02, hang: -
 
 const SUSPENSION_REST = 0.3;
 /*
-  Rapier inherits Bullet's raycast-vehicle model, where suspension stiffness is a
-  coefficient scaled by chassis mass rather than a spring rate in newtons. Its
-  default is around 5.9; this is a firm arcade setting. Two orders of magnitude
-  above it turns the car into a catapult, which is exactly what 90 did.
+  Read off Rapier rather than assumed: its wheel defaults are stiffness 5.88,
+  compression 0.83, relaxation 0.88, maxTravel 5, frictionSlip 10.5.
+
+  The spring holds the car where force balances weight, and because both scale
+  with mass the equilibrium compression is just g / (4 * stiffness) — mass
+  cancels entirely. At Rapier's default 5.88 under 9.81 that is 0.42m of travel
+  against a 0.30m spring, so the car is bottomed out before it starts and rests
+  on its own underside no matter what else is tuned. 26 puts equilibrium near
+  0.09m, which leaves most of the travel available for bumps and landings.
 */
-const SUSPENSION_STIFFNESS = 90;
-const SUSPENSION_TRAVEL = 0.3;
+const SUSPENSION_STIFFNESS = 150;
+/* Rapier's own default is 5m; there is no reason to be stingier than the spring. */
+const SUSPENSION_TRAVEL = 0.5;
+/*
+  Close to Rapier's own 0.83 / 0.88. Swept at working stiffness: 1 settles, 6
+  makes it porpoise, 25 throws it 86m into the air. Damping here is not a ratio
+  of critical damping and must not be scaled with stiffness.
+*/
+const SUSPENSION_DAMPING = 0.95;
 const MASS = 12;
 const GRAVITY = 19.6;
 /*
@@ -62,14 +74,20 @@ const GRAVITY = 19.6;
   trampoline.
 */
 const MAX_SUSPENSION_FORCE = 6000;
-const FRICTION_SLIP = 4.2;
-const SIDE_FRICTION = 0.9;
+const FRICTION_SLIP = 8;
+const SIDE_FRICTION = 0.75;
 
-const ENGINE_FORCE = 55;
-const REVERSE_FORCE = 30;
-const BRAKE_FORCE = 12;
+const ENGINE_FORCE = 42;
+const REVERSE_FORCE = 22;
+/*
+  Small numbers. Brake torque is applied per wheel against a 12kg chassis, so a
+  value that reads modest locks all four instantly and hands the solver an
+  impulse big enough to throw the car into the air — measured at 4.6m up from a
+  single handbrake application. This slows it hard without launching it.
+*/
+const BRAKE_FORCE = 2.4;
 /** Idle drag, so releasing the throttle coasts down instead of freewheeling. */
-const IDLE_BRAKE = 0.5;
+const IDLE_BRAKE = 0.18;
 const MAX_STEER = 0.52;
 /** Steering tightens up with speed or the car becomes undriveable past 40kph. */
 const STEER_FALLOFF = 0.055;
@@ -111,11 +129,23 @@ export function Car({ input, spawn = [0, 2, 0], handle }: CarProps) {
       const q = new URLSearchParams(window.location.search);
       return {
         stiffness: Number(q.get('stiffness')) || SUSPENSION_STIFFNESS,
+        damp: Number(q.get('damp')) || 0,
         engine: Number(q.get('engine')) || ENGINE_FORCE,
       };
     })(),
   );
   const bodyRef = useRef<RapierRigidBody>(null);
+  /*
+    The car is held out of the simulation until the scene has drawn a few frames.
+    Compiling the physics WASM and the first shaders stalls the main thread for
+    the best part of a second; the fixed-step loop then catches up on that whole
+    backlog in one go, and a suspension spring integrated across a dozen steps at
+    once launches the car and lands it on its roof — from which a raycast vehicle
+    can never recover, because its wheels are now pointing at the sky. Waiting is
+    the fix; no amount of spring tuning survives a step that large.
+  */
+  const [armed, setArmed] = useState(false);
+  const upsideDownFor = useRef(0);
   const controller = useRef<VehicleController | null>(null);
   const wheelRefs = useRef<(THREE.Object3D | null)[]>([]);
   const { world } = useRapier();
@@ -143,26 +173,75 @@ export function Car({ input, spawn = [0, 2, 0], handle }: CarProps) {
       vehicle.addWheel({ x, y: WHEEL.hang, z }, down, axle, SUSPENSION_REST, WHEEL.radius);
     });
 
-    for (let i = 0; i < 4; i += 1) {
+    /*
+      `?raw` leaves every wheel exactly as Rapier created it. Tuning had drifted
+      onto assumptions from Bullet's model — mass-scaled spring force, damping as
+      a ratio of critical — that this build does not appear to share. Reading the
+      engine's own defaults back is the only way to know which model is actually
+      in front of us.
+    */
+    const raw =
+      typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('raw');
+
+    if (typeof window !== 'undefined') {
+      (window as unknown as { __wheelDefaults?: unknown }).__wheelDefaults = {
+        stiffness: vehicle.wheelSuspensionStiffness(0),
+        compression: vehicle.wheelSuspensionCompression(0),
+        relaxation: vehicle.wheelSuspensionRelaxation(0),
+        maxForce: vehicle.wheelMaxSuspensionForce(0),
+        maxTravel: vehicle.wheelMaxSuspensionTravel(0),
+        frictionSlip: vehicle.wheelFrictionSlip(0),
+        sideFriction: vehicle.wheelSideFrictionStiffness(0),
+        restLength: vehicle.wheelSuspensionRestLength(0),
+      };
+    }
+
+    for (let i = 0; raw ? false : i < 4; i += 1) {
       vehicle.setWheelSuspensionStiffness(i, tuning.current.stiffness);
       vehicle.setWheelMaxSuspensionTravel(i, SUSPENSION_TRAVEL);
       vehicle.setWheelFrictionSlip(i, FRICTION_SLIP);
       vehicle.setWheelSideFrictionStiffness(i, SIDE_FRICTION);
       /*
-        Damping is not a free constant: in the Bullet model Rapier inherits, the
-        compression and relaxation coefficients are ratios of critical damping,
-        which scales with the square root of stiffness. Pinning them near 1 — as
-        this did — leaves a stiff spring effectively undamped, and a sweep showed
-        exactly that: the car oscillated harder as stiffness rose until it either
-        launched to +28m or fell through the floor at -59m. Deriving them keeps
-        the ride settled at any stiffness.
+        Raw ratios, close to Rapier's own 0.83 / 0.88. An earlier version scaled
+        these by the square root of stiffness on the assumption that they were
+        ratios of critical damping — they are not, and multiplying them by ~19
+        made the suspension so overdamped it could not extend to lift the car,
+        then numerically unstable enough to fling it 60m through the floor.
       */
-      const critical = 2 * Math.sqrt(tuning.current.stiffness);
-      // Rear a touch softer in compression, which keeps the nose from diving.
-      vehicle.setWheelSuspensionCompression(i, (i > 1 ? 0.78 : 0.86) * critical);
-      vehicle.setWheelSuspensionRelaxation(i, 0.88 * critical);
+      const damp = tuning.current.damp || SUSPENSION_DAMPING;
+      vehicle.setWheelSuspensionCompression(i, damp * (i > 1 ? 0.9 : 1));
+      vehicle.setWheelSuspensionRelaxation(i, damp * 1.06);
       vehicle.setWheelMaxSuspensionForce(i, MAX_SUSPENSION_FORCE);
     }
+
+    if (typeof window !== 'undefined') {
+      const w = window as unknown as { __vehicleBuilds?: number };
+      w.__vehicleBuilds = (w.__vehicleBuilds ?? 0) + 1;
+    }
+    /*
+      Centre of mass below the axle line.
+
+      A box chassis puts its centre of mass in the middle of the box, well above
+      the contact patches, and a raycast vehicle has nothing but tyre grip
+      resisting roll — so it trips over its outside wheels in any real corner.
+      Measured before this: upY swinging from 0.8 to -0.88 inside one turn, which
+      is the car ending up on its roof. Dropping the centre of mass under the
+      wheels is the standard arcade fix and costs nothing.
+
+      Set explicitly rather than derived from collider density, so the inertia
+      tensor is ours too: yaw (y) is deliberately the loosest axis and roll (z)
+      the stiffest, which lets the car rotate into a corner without wanting to
+      lie down in it.
+    */
+    chassis.setAdditionalMassProperties(
+      MASS,
+      { x: 0, y: -0.34, z: 0 },
+      // I = m/3 * (h² + h²) for a box of these half-extents: 10.4, 12.3, 2.3.
+      // Roll is raised above its true value; the rest are physical.
+      { x: 10.4, y: 12.3, z: 4.2 },
+      { x: 0, y: 0, z: 0, w: 1 },
+      true,
+    );
 
     controller.current = vehicle;
     return () => {
@@ -170,6 +249,11 @@ export function Car({ input, spawn = [0, 2, 0], handle }: CarProps) {
       vehicle.free();
     };
   }, [world]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setArmed(true), 900);
+    return () => clearTimeout(timer);
+  }, []);
 
   /* ── Drive it, inside the physics step rather than the render loop ─────── */
   /*
@@ -189,11 +273,36 @@ export function Car({ input, spawn = [0, 2, 0], handle }: CarProps) {
     const { steer, throttle, brake, reset } = input.current;
     const speed = vehicle.currentVehicleSpeed();
 
+    /*
+      Right itself rather than stranding the player.
+
+      On its roof the wheels point upward and find no ground, so there is no
+      force that can ever turn it back over — the car is simply dead until
+      someone presses R, and most people will not know that. If it has been
+      inverted and stationary for a moment, put it back on its wheels where it
+      lies. The reference site does the same thing.
+    */
+    const rotation = chassis.rotation();
+    const upY = 1 - 2 * (rotation.x * rotation.x + rotation.z * rotation.z);
+    if (upY < 0.2 && Math.abs(speed) < 2.5) {
+      upsideDownFor.current += world.timestep;
+      if (upsideDownFor.current > 1.2) {
+        const here = chassis.translation();
+        respawn(chassis, [here.x, spawn[1], here.z]);
+        upsideDownFor.current = 0;
+        return;
+      }
+    } else {
+      upsideDownFor.current = 0;
+    }
+
     if (reset) {
       respawn(chassis, spawn);
       input.current.reset = false;
       return;
     }
+
+    if (!armed) return;
 
     // Full lock at a crawl, a fraction of it at speed.
     const steerLimit = MAX_STEER / (1 + Math.abs(speed) * STEER_FALLOFF);
@@ -253,12 +362,12 @@ export function Car({ input, spawn = [0, 2, 0], handle }: CarProps) {
       ref={bodyRef}
       position={spawn}
       colliders={false}
-      mass={MASS}
       /*
         Low damping keeps it lively, but some angular damping is essential — the
         raycast vehicle has nothing resisting yaw once all four wheels leave the
         ground, so a jump off a ramp would otherwise end in an uncontrolled spin.
       */
+      gravityScale={armed ? 1 : 0}
       linearDamping={0.06}
       angularDamping={0.9}
       canSleep={false}
@@ -268,6 +377,7 @@ export function Car({ input, spawn = [0, 2, 0], handle }: CarProps) {
       <CuboidCollider
         args={[CHASSIS.width, CHASSIS.height, CHASSIS.length]}
         position={[0, 0, 0]}
+        density={0}
         friction={0.4}
         restitution={0.05}
       />
