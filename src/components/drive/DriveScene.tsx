@@ -4,12 +4,17 @@ import { useEffect, useRef, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { Physics, RigidBody, CuboidCollider } from '@react-three/rapier';
 import { Environment, Grid } from '@react-three/drei';
-import { Car, type CarHandle } from './Car';
+import { Car, FIXED_DT, type CarHandle } from './Car';
 import { FollowCamera } from './FollowCamera';
 import { useDriveControls } from './useDriveControls';
 
 /* Just above resting ride height, so it settles rather than slams. */
-const SPAWN: [number, number, number] = [0, 0.95, -6];
+/*
+  Spawned at its settled ride height rather than above it. Dropping the car even
+  20cm sets the suspension ringing, and a spring that rings is a spring that
+  eventually bounces a wheel off the ground and puts the car on its roof.
+*/
+const SPAWN: [number, number, number] = [0, 0.72, -6];
 /** Half-extent of the playable plaza, in metres. */
 export const ARENA = 44;
 
@@ -63,7 +68,7 @@ export function DriveScene({ night }: { night: boolean }) {
         while the chassis sat underground. 1/60 also makes the handling identical
         on a 60Hz laptop and a 144Hz monitor.
       */}
-      <Physics timeStep={1 / 60} debug={debug} /* Earth gravity. Doubling it to feel snappy also doubles what the springs
+      <Physics timeStep={FIXED_DT} debug={debug} /* Earth gravity. Doubling it to feel snappy also doubles what the springs
          must hold, which is half of why the car sat on its belly. */
         gravity={[0, -9.81, 0]}>
         <Ground />

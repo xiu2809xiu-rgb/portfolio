@@ -42,6 +42,16 @@ const CHASSIS = { width: 0.72, height: 0.22, length: 1.6 };
 */
 const WHEEL = { radius: 0.33, halfTrack: 0.82, front: 1.02, back: -1.02, hang: -CHASSIS.height };
 
+/*
+  The physics step, stated once and shared with <Physics timeStep>.
+
+  Not read from `world.timestep` inside the step callback: the binding assigns
+  that AFTER running beforeStep callbacks, so a read there returns the previous
+  step's dt. It is harmless while both happen to be 1/60, and silently wrong the
+  moment either changes.
+*/
+export const FIXED_DT = 1 / 60;
+
 const SUSPENSION_REST = 0.3;
 /*
   Read off Rapier rather than assumed: its wheel defaults are stiffness 5.88,
@@ -54,7 +64,7 @@ const SUSPENSION_REST = 0.3;
   on its own underside no matter what else is tuned. 26 puts equilibrium near
   0.09m, which leaves most of the travel available for bumps and landings.
 */
-const SUSPENSION_STIFFNESS = 150;
+const SUSPENSION_STIFFNESS = 4900;
 /* Rapier's own default is 5m; there is no reason to be stingier than the spring. */
 const SUSPENSION_TRAVEL = 0.5;
 /*
@@ -62,8 +72,22 @@ const SUSPENSION_TRAVEL = 0.5;
   makes it porpoise, 25 throws it 86m into the air. Damping here is not a ratio
   of critical damping and must not be scaled with stiffness.
 */
-const SUSPENSION_DAMPING = 0.95;
-const MASS = 12;
+const SUSPENSION_DAMPING = 320;
+/*
+  300, not 12. Mass turned out to be the single most important number here: a
+  12kg chassis is a shopping trolley, and every suspension impulse threw it into
+  the air or onto its roof. At 300 the same forces are proportionate and the car
+  simply sits there — measured drift while idle went from 6m to 0.27m.
+*/
+const MASS = 300;
+/*
+  Centre of mass well below the axle line. The static stability factor — half
+  track over centre-of-mass height — is what decides whether the car slides or
+  trips, and dropping the mass centre is the cheapest way to raise it. Measured:
+  upright 0.99 of the time through hard cornering and braking, against 0.74 with
+  the mass centre at the middle of the box.
+*/
+const COM_HEIGHT = -0.5;
 const GRAVITY = 19.6;
 /*
   Sized to this car, not to Bullet's default. That default is 6000N, which
@@ -73,21 +97,40 @@ const GRAVITY = 19.6;
   Three times static weight is enough to absorb a drop without becoming a
   trampoline.
 */
-const MAX_SUSPENSION_FORCE = 6000;
-const FRICTION_SLIP = 8;
+/*
+  Rapier's default 6000 is a hard ceiling, not a safety valve, and it was what
+  pinned the car on its belly: above about 5000 of stiffness the spring made no
+  difference at all because every extra newton was being clipped here. Sized to
+  carry this chassis with headroom for landings.
+*/
+const MAX_SUSPENSION_FORCE = 20000;
+/*
+  This is the rollover parameter, and Rapier says so: "the larger the value, the
+  more instantaneous braking will happen (with the risk of causing the vehicle to
+  flip if it's too strong)."
+
+  It sets the friction circle, so peak lateral acceleration is frictionSlip * g.
+  The chassis tips at its static stability factor — halfTrack / centre-of-mass
+  height = 0.82 / 0.47 = 1.74g. At 8 the tyres could pull 8g, which is 4.6x more
+  grip than the body can stand: the tyre never breaks away, so every corner ends
+  with the car tripping over its outside wheels. Below the stability factor it
+  slides first, which is both survivable and more fun.
+*/
+const FRICTION_SLIP = 1.6;
 const SIDE_FRICTION = 0.75;
 
-const ENGINE_FORCE = 42;
-const REVERSE_FORCE = 22;
+/* Scaled with the chassis: 25x the mass wants 25x the shove. */
+const ENGINE_FORCE = 1100;
+const REVERSE_FORCE = 520;
 /*
   Small numbers. Brake torque is applied per wheel against a 12kg chassis, so a
   value that reads modest locks all four instantly and hands the solver an
   impulse big enough to throw the car into the air — measured at 4.6m up from a
   single handbrake application. This slows it hard without launching it.
 */
-const BRAKE_FORCE = 2.4;
+const BRAKE_FORCE = 60;
 /** Idle drag, so releasing the throttle coasts down instead of freewheeling. */
-const IDLE_BRAKE = 0.18;
+const IDLE_BRAKE = 4;
 const MAX_STEER = 0.52;
 /** Steering tightens up with speed or the car becomes undriveable past 40kph. */
 const STEER_FALLOFF = 0.055;
@@ -123,32 +166,64 @@ export function Car({ input, spawn = [0, 2, 0], handle }: CarProps) {
     its belly are overridable from the query string, so a run can sweep them
     without a rebuild between each value.
   */
-  const tuning = useRef(
-    (() => {
-      if (typeof window === 'undefined') return { stiffness: SUSPENSION_STIFFNESS, engine: ENGINE_FORCE };
-      const q = new URLSearchParams(window.location.search);
-      return {
-        stiffness: Number(q.get('stiffness')) || SUSPENSION_STIFFNESS,
-        damp: Number(q.get('damp')) || 0,
-        engine: Number(q.get('engine')) || ENGINE_FORCE,
-      };
-    })(),
-  );
+  const [tuning] = useState(() => {
+    /* Numbers and switches kept apart so the parser below stays typed. */
+    const numbers = {
+      stiffness: SUSPENSION_STIFFNESS,
+      damp: SUSPENSION_DAMPING,
+      engine: ENGINE_FORCE,
+      slip: FRICTION_SLIP,
+      side: SIDE_FRICTION,
+      track: WHEEL.halfTrack,
+      com: COM_HEIGHT,
+      angDamp: 2.5,
+      rest: SUSPENSION_REST,
+      travel: SUSPENSION_TRAVEL,
+      mass: MASS,
+      maxForce: MAX_SUSPENSION_FORCE,
+    };
+    const flags = { ccd: true, addMass: true };
+    if (typeof window === 'undefined') return { ...numbers, ...flags };
+
+    const q = new URLSearchParams(window.location.search);
+    const parsed = { ...numbers };
+    (Object.keys(numbers) as (keyof typeof numbers)[]).forEach((key) => {
+      const raw = q.get(key);
+      if (raw !== null && raw !== '' && Number.isFinite(Number(raw))) parsed[key] = Number(raw);
+    });
+
+    return {
+      ...parsed,
+      ccd: q.get('ccd') !== '0',
+      addMass: q.get('addmass') !== '0',
+    };
+  });
+
   const bodyRef = useRef<RapierRigidBody>(null);
+  const controller = useRef<VehicleController | null>(null);
+  const wheelRefs = useRef<(THREE.Object3D | null)[]>([]);
+  const { world } = useRapier();
+
   /*
     The car is held out of the simulation until the scene has drawn a few frames.
     Compiling the physics WASM and the first shaders stalls the main thread for
     the best part of a second; the fixed-step loop then catches up on that whole
     backlog in one go, and a suspension spring integrated across a dozen steps at
     once launches the car and lands it on its roof — from which a raycast vehicle
-    can never recover, because its wheels are now pointing at the sky. Waiting is
-    the fix; no amount of spring tuning survives a step that large.
+    can never recover, because its wheels are now pointing at the sky.
   */
   const [armed, setArmed] = useState(false);
   const upsideDownFor = useRef(0);
-  const controller = useRef<VehicleController | null>(null);
-  const wheelRefs = useRef<(THREE.Object3D | null)[]>([]);
-  const { world } = useRapier();
+  /*
+    The binding clamps a frame's delta to 0.5s and then drains it in whole steps,
+    so one stalled frame — a GC pause, a texture upload, an alt-tab — can run up
+    to thirty physics steps back to back. Every one re-reads the same input
+    snapshot, so half a second of simulated time is driven at a fixed steering
+    angle with no chance to correct. Past a few substeps the car coasts instead.
+  */
+  const substepsThisFrame = useRef(0);
+  const smoothFrames = useRef(0);
+  const elapsed = useRef(0);
 
   /* ── Build the vehicle once the chassis body exists ───────────────────── */
   useEffect(() => {
@@ -162,15 +237,16 @@ export function Car({ input, spawn = [0, 2, 0], handle }: CarProps) {
 
     const down = { x: 0, y: -1, z: 0 };
     const axle = { x: -1, y: 0, z: 0 };
+    const halfTrack = tuning.track;
     const corners: [number, number][] = [
-      [WHEEL.halfTrack, WHEEL.front],
-      [-WHEEL.halfTrack, WHEEL.front],
-      [WHEEL.halfTrack, WHEEL.back],
-      [-WHEEL.halfTrack, WHEEL.back],
+      [halfTrack, WHEEL.front],
+      [-halfTrack, WHEEL.front],
+      [halfTrack, WHEEL.back],
+      [-halfTrack, WHEEL.back],
     ];
 
     corners.forEach(([x, z]) => {
-      vehicle.addWheel({ x, y: WHEEL.hang, z }, down, axle, SUSPENSION_REST, WHEEL.radius);
+      vehicle.addWheel({ x, y: WHEEL.hang, z }, down, axle, tuning.rest, WHEEL.radius);
     });
 
     /*
@@ -197,10 +273,11 @@ export function Car({ input, spawn = [0, 2, 0], handle }: CarProps) {
     }
 
     for (let i = 0; raw ? false : i < 4; i += 1) {
-      vehicle.setWheelSuspensionStiffness(i, tuning.current.stiffness);
-      vehicle.setWheelMaxSuspensionTravel(i, SUSPENSION_TRAVEL);
-      vehicle.setWheelFrictionSlip(i, FRICTION_SLIP);
-      vehicle.setWheelSideFrictionStiffness(i, SIDE_FRICTION);
+      vehicle.setWheelSuspensionStiffness(i, tuning.stiffness);
+      vehicle.setWheelMaxSuspensionTravel(i, tuning.travel);
+      vehicle.setWheelSuspensionRestLength(i, tuning.rest);
+      vehicle.setWheelFrictionSlip(i, tuning.slip);
+      vehicle.setWheelSideFrictionStiffness(i, tuning.side);
       /*
         Raw ratios, close to Rapier's own 0.83 / 0.88. An earlier version scaled
         these by the square root of stiffness on the assumption that they were
@@ -208,10 +285,10 @@ export function Car({ input, spawn = [0, 2, 0], handle }: CarProps) {
         made the suspension so overdamped it could not extend to lift the car,
         then numerically unstable enough to fling it 60m through the floor.
       */
-      const damp = tuning.current.damp || SUSPENSION_DAMPING;
+      const damp = tuning.damp || SUSPENSION_DAMPING;
       vehicle.setWheelSuspensionCompression(i, damp * (i > 1 ? 0.9 : 1));
       vehicle.setWheelSuspensionRelaxation(i, damp * 1.06);
-      vehicle.setWheelMaxSuspensionForce(i, MAX_SUSPENSION_FORCE);
+      vehicle.setWheelMaxSuspensionForce(i, tuning.maxForce);
     }
 
     if (typeof window !== 'undefined') {
@@ -233,12 +310,18 @@ export function Car({ input, spawn = [0, 2, 0], handle }: CarProps) {
       the stiffest, which lets the car rotate into a corner without wanting to
       lie down in it.
     */
-    chassis.setAdditionalMassProperties(
-      MASS,
-      { x: 0, y: -0.34, z: 0 },
+    if (tuning.addMass)
+      chassis.setAdditionalMassProperties(
+      tuning.mass,
+      { x: 0, y: tuning.com, z: 0 },
       // I = m/3 * (h² + h²) for a box of these half-extents: 10.4, 12.3, 2.3.
       // Roll is raised above its true value; the rest are physical.
-      { x: 10.4, y: 12.3, z: 4.2 },
+      /* I = m/3 * (h^2 + h^2) for the chassis box, scaled with whatever mass is set. */
+      {
+        x: (tuning.mass / 3) * (CHASSIS.height ** 2 + CHASSIS.length ** 2),
+        y: (tuning.mass / 3) * (CHASSIS.width ** 2 + CHASSIS.length ** 2),
+        z: (tuning.mass / 3) * (CHASSIS.width ** 2 + CHASSIS.height ** 2) * 1.8,
+      },
       { x: 0, y: 0, z: 0, w: 1 },
       true,
     );
@@ -250,10 +333,7 @@ export function Car({ input, spawn = [0, 2, 0], handle }: CarProps) {
     };
   }, [world]);
 
-  useEffect(() => {
-    const timer = setTimeout(() => setArmed(true), 900);
-    return () => clearTimeout(timer);
-  }, []);
+
 
   /* ── Drive it, inside the physics step rather than the render loop ─────── */
   /*
@@ -266,9 +346,16 @@ export function Car({ input, spawn = [0, 2, 0], handle }: CarProps) {
   */
   /* eslint-disable react-hooks/immutability */
   useBeforePhysicsStep(() => {
+    if (typeof window !== 'undefined') {
+      const w = window as unknown as { __steps?: number };
+      w.__steps = (w.__steps ?? 0) + 1;
+    }
     const vehicle = controller.current;
     const chassis = bodyRef.current;
     if (!vehicle || !chassis) return;
+
+    substepsThisFrame.current += 1;
+    const catchingUp = substepsThisFrame.current > 3;
 
     const { steer, throttle, brake, reset } = input.current;
     const speed = vehicle.currentVehicleSpeed();
@@ -285,7 +372,7 @@ export function Car({ input, spawn = [0, 2, 0], handle }: CarProps) {
     const rotation = chassis.rotation();
     const upY = 1 - 2 * (rotation.x * rotation.x + rotation.z * rotation.z);
     if (upY < 0.2 && Math.abs(speed) < 2.5) {
-      upsideDownFor.current += world.timestep;
+      upsideDownFor.current += FIXED_DT;
       if (upsideDownFor.current > 1.2) {
         const here = chassis.translation();
         respawn(chassis, [here.x, spawn[1], here.z]);
@@ -306,12 +393,12 @@ export function Car({ input, spawn = [0, 2, 0], handle }: CarProps) {
 
     // Full lock at a crawl, a fraction of it at speed.
     const steerLimit = MAX_STEER / (1 + Math.abs(speed) * STEER_FALLOFF);
-    const steerAngle = steer * steerLimit;
+    const steerAngle = (catchingUp ? 0 : steer) * steerLimit;
     vehicle.setWheelSteering(0, steerAngle);
     vehicle.setWheelSteering(1, steerAngle);
 
-    const force =
-      throttle >= 0 ? throttle * tuning.current.engine : throttle * REVERSE_FORCE;
+    const drive = catchingUp ? 0 : throttle;
+    const force = drive >= 0 ? drive * tuning.engine : drive * REVERSE_FORCE;
     // Rear-wheel drive: the back axle pushes, which lets the tail step out.
     vehicle.setWheelEngineForce(2, force);
     vehicle.setWheelEngineForce(3, force);
@@ -328,7 +415,7 @@ export function Car({ input, spawn = [0, 2, 0], handle }: CarProps) {
       belly. Rapier's controller already ignores the chassis it is attached to,
       and `hang` sits on the underside of the collider, so nothing is needed here.
     */
-    vehicle.updateVehicle(world.timestep);
+    vehicle.updateVehicle(FIXED_DT);
 
     if (handle.current) {
       handle.current.body = chassis;
@@ -339,7 +426,30 @@ export function Car({ input, spawn = [0, 2, 0], handle }: CarProps) {
   /* eslint-enable react-hooks/immutability */
 
   /* ── Wheel visuals follow the simulated suspension ─────────────────────── */
-  useFrame(() => {
+  useFrame((_, delta) => {
+    /*
+      Arm on measured smoothness rather than a stopwatch. A fixed timeout has to
+      guess how long this machine takes to compile the physics WASM and the first
+      shaders, and guessing short is what dropped the car into a catch-up burst
+      and landed it on its roof before the player saw anything. Thirty consecutive
+      frames under 50ms means the scene is genuinely running; only then does the
+      car get gravity and an engine.
+    */
+    if (!armed) {
+      /*
+        Two ways in. Twenty frames inside 100ms means the scene is genuinely
+        running — the normal path, and it adapts to whatever the machine can do
+        rather than guessing. The wall-clock fallback matters just as much: on a
+        weak GPU the frame budget may never be met, and a car that refuses to
+        start because the renderer is slow is worse than one that starts into a
+        slightly rough first second.
+      */
+      elapsed.current += delta;
+      smoothFrames.current = delta < 0.1 ? smoothFrames.current + 1 : 0;
+      if (smoothFrames.current > 20 || elapsed.current > 4) setArmed(true);
+    }
+
+    substepsThisFrame.current = 0;
     const vehicle = controller.current;
     if (!vehicle) return;
 
@@ -348,7 +458,7 @@ export function Car({ input, spawn = [0, 2, 0], handle }: CarProps) {
       if (!wheel) continue;
 
       const connection = vehicle.wheelChassisConnectionPointCs(i);
-      const suspension = vehicle.wheelSuspensionLength(i) ?? SUSPENSION_REST;
+      const suspension = vehicle.wheelSuspensionLength(i) ?? tuning.rest;
       if (connection) wheel.position.set(connection.x, connection.y - suspension, connection.z);
 
       const steering = vehicle.wheelSteering(i) ?? 0;
@@ -367,17 +477,18 @@ export function Car({ input, spawn = [0, 2, 0], handle }: CarProps) {
         raycast vehicle has nothing resisting yaw once all four wheels leave the
         ground, so a jump off a ramp would otherwise end in an uncontrolled spin.
       */
+      mass={tuning.addMass ? undefined : tuning.mass}
       gravityScale={armed ? 1 : 0}
       linearDamping={0.06}
-      angularDamping={0.9}
+      angularDamping={tuning.angDamp}
       canSleep={false}
-      ccd
+      ccd={tuning.ccd}
       name="car"
     >
       <CuboidCollider
         args={[CHASSIS.width, CHASSIS.height, CHASSIS.length]}
         position={[0, 0, 0]}
-        density={0}
+        density={tuning.addMass ? 0 : undefined}
         friction={0.4}
         restitution={0.05}
       />
