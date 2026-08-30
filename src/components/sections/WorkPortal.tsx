@@ -34,6 +34,9 @@ import { cn } from '@/lib/utils';
  * on the GPU.
  */
 
+/** Vertical offsets the track cycles through, low to high. */
+const RISE = ['10vh', '0vh', '-10vh'] as const;
+
 const LETTERS = ['W', 'O', 'R', 'K'] as const;
 /** Copies per letter, centred on zero, e.g. -6 … +6. */
 const COPIES = 13;
@@ -217,10 +220,21 @@ export function WorkPortal() {
           <motion.ul
             ref={trackRef}
             style={{ x: trackX }}
-            className="absolute inset-y-0 left-0 flex w-max items-center gap-6 pl-[8vw] pr-[14vw]"
+            className="absolute inset-y-0 left-0 flex w-max items-center gap-[4vw] pl-[8vw] pr-[14vw]"
           >
             {projects.map((project, index) => (
-              <li key={project.slug} className="w-[min(78vw,30rem)] shrink-0">
+              <li
+                key={project.slug}
+                className="w-[min(78vw,30rem)] shrink-0"
+                /*
+                  The cards climb rather than sitting on one line. A flat row
+                  reads as a filmstrip; staggering the baseline makes the eye
+                  travel diagonally and gives the giant letters behind somewhere
+                  to show through between cards. Three steps then reset, so the
+                  rise repeats instead of walking off the top of the viewport.
+                */
+                style={{ transform: `translateY(${RISE[index % RISE.length]})` }}
+              >
                 <ProjectCard project={project} index={index} playing={inView} />
               </li>
             ))}
@@ -390,7 +404,14 @@ function ProjectCard({
   return (
     <Link
       href={`/work/${project.slug}`}
-      className="group block overflow-hidden rounded-2xl border border-lime/25 bg-[#0b0e13] shadow-[0_24px_60px_-24px_rgba(0,0,0,0.9)] transition-colors hover:border-lime/60"
+      /*
+        A black matte around the media, not a coloured outline. The frame's job
+        is to separate a bright preview from a near-black page — which black does
+        by holding a hard edge against the video, while a lime rule just drew a
+        decorative line. The thin outer ring keeps the card from dissolving into
+        the background where the video happens to be dark.
+      */
+      className="group block rounded-[4px] border border-white/10 bg-black p-2.5 shadow-[0_30px_70px_-25px_rgba(0,0,0,0.95)] transition-colors hover:border-white/25"
     >
       <div className="relative aspect-[16/10] overflow-hidden bg-black">
         {project.preview ? (
@@ -438,24 +459,34 @@ function ProjectCard({
         ) : null}
       </div>
 
-      <div className="flex items-start justify-between gap-3 p-5">
-        <div className="min-w-0">
-          <p className="flex items-center gap-2 font-mono text-[0.6rem] uppercase tracking-widest text-muted-foreground">
-            <span className="text-lime">
-              {project.index ?? String(index + 1).padStart(2, '0')}
-            </span>
-            {project.role}
-          </p>
-          <h3 className="mt-1.5 truncate font-heading text-lg font-bold tracking-tight">
-            {project.title} <span className="text-lime">{project.titleAccent}</span>
-          </h3>
-        </div>
-        <ArrowUpRight
-          className={cn(
-            'mt-1 size-5 shrink-0 text-muted-foreground transition-all',
-            'group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-lime',
-          )}
-        />
+      {/*
+        Caption rail, not a card footer. Inside the matte the label reads as
+        engraving on the mount — which is how the reference labels each project —
+        rather than as a second panel stacked under the media.
+      */}
+      <div className="flex items-baseline justify-between gap-3 px-1 pb-0.5 pt-2.5">
+        <p className="flex min-w-0 items-baseline gap-2 font-mono text-[0.62rem] uppercase tracking-[0.18em]">
+          <span className="text-lime">
+            {project.index ?? String(index + 1).padStart(2, '0')}
+          </span>
+          <span className="truncate text-foreground/85">
+            {project.title} {project.titleAccent}
+          </span>
+        </p>
+        {/*
+          A short serial rather than the role. The role is a sentence — it either
+          truncates to nonsense or pushes the title out of the rail — and the
+          reference labels each mount with a code, not a job description.
+        */}
+        <span className="flex shrink-0 items-center gap-1.5 font-mono text-[0.62rem] uppercase tracking-[0.18em] text-muted-foreground">
+          {`${project.index ?? String(index + 1).padStart(2, '0')}/${String(projects.length).padStart(2, '0')}`}
+          <ArrowUpRight
+            className={cn(
+              'size-3.5 transition-transform',
+              'group-hover:-translate-y-0.5 group-hover:translate-x-0.5',
+            )}
+          />
+        </span>
       </div>
     </Link>
   );
