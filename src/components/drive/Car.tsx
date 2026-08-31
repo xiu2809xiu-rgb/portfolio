@@ -355,7 +355,15 @@ export function Car({ input, spawn = [0, 2, 0], handle }: CarProps) {
     if (!vehicle || !chassis) return;
 
     substepsThisFrame.current += 1;
-    const catchingUp = substepsThisFrame.current > 3;
+    /*
+      Eight, not three. Physics runs at 60Hz, so a machine rendering at 20fps
+      legitimately takes three substeps every frame — a threshold of three fired
+      constantly on ordinary hardware and held the throttle at zero, which is
+      exactly what made the car crawl on the deployed site while driving fine on
+      a fast local machine. Eight substeps is 7.5fps: a genuine stall, not a slow
+      GPU.
+    */
+    const catchingUp = substepsThisFrame.current > 8;
 
     const { steer, throttle, brake, reset } = input.current;
     const speed = vehicle.currentVehicleSpeed();
