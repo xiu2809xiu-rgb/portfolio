@@ -2,22 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  ArrowUpRight,
-  BookOpen,
-  Braces,
-  CalendarClock,
-  Check,
-  Copy,
-  Download,
-  Code2,
-  Home,
-  Briefcase,
-  Mail,
-  Rss,
-  Terminal,
-  Wrench,
-} from 'lucide-react';
+import { ArrowUpRight, BookOpen, Braces, Briefcase, CalendarClock, Car, Check, Code2, Copy, Download, Home, Mail, Megaphone, Rss, Terminal, Wrench } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Command,
@@ -151,6 +136,20 @@ export function CommandPalette({ projects, posts }: CommandPaletteProps) {
             <CommandItem onSelect={() => go('/book')} value="book schedule calendar meeting call">
               <CalendarClock /> Book a session
               <CommandShortcut>↵</CommandShortcut>
+            </CommandItem>
+          </CommandGroup>
+
+          {/*
+            Its own group rather than mixed into "Go to". These are not pages of
+            the portfolio, and someone scanning the palette for the work should
+            not have to step over a driving game to find it.
+          */}
+          <CommandGroup heading="Detours">
+            <CommandItem onSelect={() => go('/drive')} value="drive car game 3d physics play explore town">
+              <Car /> Take the car out
+            </CommandItem>
+            <CommandItem onSelect={() => go('/pitch')} value="pitch hard sell slider hire me joke">
+              <Megaphone /> The pitch
             </CommandItem>
           </CommandGroup>
 
