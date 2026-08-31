@@ -39,7 +39,7 @@ async function score(browser, config) {
         x: t.x, y: t.y, z: t.z,
         upY: 1 - 2 * (r.x * r.x + r.z * r.z),
         kph: h.speedKph,
-        grounded: [0, 1, 2, 3].filter((i) => h.vehicle.wheelIsInContact(i)).length,
+        grounded: h.grounded,
       };
     });
 

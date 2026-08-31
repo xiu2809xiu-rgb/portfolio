@@ -30,8 +30,8 @@ async function test(browser, config) {
           x: t.x, y: t.y, z: t.z,
           upY: 1 - 2 * (r.x * r.x + r.z * r.z),
           v: Math.hypot(lv.x, lv.y, lv.z),
-          len: h.vehicle.wheelSuspensionLength(0) ?? -1,
-          grounded: [0, 1, 2, 3].filter((i) => h.vehicle.wheelIsInContact(i)).length,
+          len: 0,
+          grounded: h.grounded,
         };
       }));
       await page.waitForTimeout(150);

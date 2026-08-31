@@ -28,7 +28,7 @@ async function run(browser, config) {
         x: t.x, z: t.z, y: t.y,
         speed: Math.hypot(lv.x, lv.z),
         upY: 1 - 2 * (r.x * r.x + r.z * r.z),
-        grounded: [0, 1, 2, 3].filter((i) => h.vehicle.wheelIsInContact(i)).length,
+        grounded: h.grounded,
       };
     });
 

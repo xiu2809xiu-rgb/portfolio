@@ -14,7 +14,7 @@ import { useDriveControls } from './useDriveControls';
   20cm sets the suspension ringing, and a spring that rings is a spring that
   eventually bounces a wheel off the ground and puts the car on its roof.
 */
-const SPAWN: [number, number, number] = [0, 0.72, -6];
+const SPAWN: [number, number, number] = [0, 0.95, -6];
 /** Half-extent of the playable plaza, in metres. */
 export const ARENA = 44;
 
@@ -29,7 +29,7 @@ export const ARENA = 44;
  */
 export function DriveScene({ night }: { night: boolean }) {
   const input = useDriveControls();
-  const handle = useRef<CarHandle>({ body: null, speedKph: 0, vehicle: null });
+  const handle = useRef<CarHandle>({ body: null, speedKph: 0, grounded: 0 });
 
   /*
     `?debug` turns on Rapier's collider wireframes and publishes the car handle,
