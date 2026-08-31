@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { Physics, RigidBody, CuboidCollider } from '@react-three/rapier';
+import { Physics } from '@react-three/rapier';
 import { Environment, Grid } from '@react-three/drei';
 import { Car, FIXED_DT, type CarHandle } from './Car';
+import { ARENA, World } from './World';
 import { FollowCamera } from './FollowCamera';
 import { useDriveControls } from './useDriveControls';
 
@@ -15,9 +16,6 @@ import { useDriveControls } from './useDriveControls';
   eventually bounces a wheel off the ground and puts the car on its roof.
 */
 const SPAWN: [number, number, number] = [0, 0.95, -6];
-/** Half-extent of the playable plaza, in metres. */
-export const ARENA = 44;
-
 /**
  * The drivable world.
  *
@@ -78,8 +76,7 @@ export function DriveScene({
       <Physics timeStep={FIXED_DT} debug={debug} /* Earth gravity. Doubling it to feel snappy also doubles what the springs
          must hold, which is half of why the car sat on its belly. */
         gravity={[0, -9.81, 0]}>
-        <Ground />
-        <Walls />
+        <World night={night} />
         <Car input={input} spawn={SPAWN} handle={handle} />
       </Physics>
 
@@ -129,39 +126,5 @@ function Lights({ night }: { night: boolean }) {
         args={[night ? '#1b3a5c' : '#cfe8ff', '#0d2a12', night ? 0.5 : 0.9]}
       />
     </>
-  );
-}
-
-function Ground() {
-  return (
-    <RigidBody type="fixed" friction={1.3} restitution={0.02} name="ground">
-      <CuboidCollider args={[ARENA, 0.5, ARENA]} position={[0, -0.5, 0]} />
-      <mesh position={[0, 0, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <planeGeometry args={[ARENA * 2, ARENA * 2]} />
-        <meshStandardMaterial color="#0c1117" roughness={0.95} metalness={0} />
-      </mesh>
-    </RigidBody>
-  );
-}
-
-/** Invisible perimeter, so the car cannot drive off into the fog forever. */
-function Walls() {
-  const h = 3;
-  const sides: [number, number, number][] = [
-    [0, h, ARENA],
-    [0, h, -ARENA],
-    [ARENA, h, 0],
-    [-ARENA, h, 0],
-  ];
-  return (
-    <RigidBody type="fixed" name="walls">
-      {sides.map(([x, y, z], i) => (
-        <CuboidCollider
-          key={i}
-          args={i < 2 ? [ARENA, h, 0.5] : [0.5, h, ARENA]}
-          position={[x, y, z]}
-        />
-      ))}
-    </RigidBody>
   );
 }

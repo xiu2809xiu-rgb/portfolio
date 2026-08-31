@@ -262,7 +262,14 @@ export function Car({ input, spawn = [0, 1, 0], handle }: CarProps) {
         .applyAxisAngle(v.normal, wheel.steer)
         .projectOnPlane(v.normal)
         .normalize();
-      v.forward.copy(v.normal).cross(v.right).normalize();
+      /*
+        right x normal, not normal x right. The car's nose is +Z (the headlights
+        are modelled there and the chase camera sits behind it), and
+        normal x right resolves to -Z — so the engine force was pushing out of
+        the back. Distance-based tests never caught it because distance is
+        unsigned; the harness now asserts direction.
+      */
+      v.forward.copy(v.right).cross(v.normal).normalize();
 
       const lateralSpeed = v.patch.dot(v.right);
       const rollSpeed = v.patch.dot(v.forward);

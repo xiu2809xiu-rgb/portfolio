@@ -29,6 +29,13 @@ async function run(browser, config) {
         speed: Math.hypot(lv.x, lv.z),
         upY: 1 - 2 * (r.x * r.x + r.z * r.z),
         grounded: h.grounded,
+        /* Signed: distance alone cannot tell forward from reverse. */
+        alongNose: (() => {
+          const q = h.body.rotation();
+          const fx = 2 * (q.x * q.z + q.w * q.y);
+          const fz = 1 - 2 * (q.x * q.x + q.y * q.y);
+          return lv.x * fx + lv.z * fz;
+        })(),
       };
     });
 
@@ -50,6 +57,12 @@ async function run(browser, config) {
       dist: +Math.hypot(end.x - start.x, end.z - start.z).toFixed(1),
       topSpeed: +Math.max(...samples.map((s) => s.speed)).toFixed(1),
       grounded: +(samples.reduce((a, s) => a + s.grounded, 0) / (samples.length * 4)).toFixed(2),
+      /* Judged a second in, not at the end: by five seconds the car has reached
+         the arena wall and bounced, which reads as reverse. */
+      direction: (() => {
+        const early = samples[Math.min(5, samples.length - 1)].alongNose;
+        return early > 0.5 ? 'FORWARD' : early < -0.5 ? 'REVERSE' : 'still';
+      })(),
       upright: +(samples.filter((s) => s.upY > 0.8).length / samples.length).toFixed(2),
       maxY: +Math.max(...samples.map((s) => s.y)).toFixed(2),
     };
@@ -70,6 +83,7 @@ for (const r of out) {
     'dist', String(r.dist ?? '-').padStart(6),
     'top', String(r.topSpeed ?? '-').padStart(5), 'm/s',
     'gnd', String(r.grounded ?? '-').padEnd(5),
+    String(r.direction ?? '-').padEnd(8),
     'upright', String(r.upright ?? '-').padEnd(5),
     'maxY', String(r.maxY ?? '-').padEnd(5),
     JSON.stringify(r.config),
