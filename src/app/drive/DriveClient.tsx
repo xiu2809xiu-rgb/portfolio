@@ -2,10 +2,12 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { CarHandle } from '@/components/drive/Car';
+import type { ZoneState } from '@/components/drive/Zones';
+import { makeClock, type DayNight } from '@/components/drive/useDayNight';
 import { Hud } from '@/components/drive/Hud';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { ArrowLeft, Moon, Sun } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { useStillness } from '@/lib/use-stillness';
 import { cn } from '@/lib/utils';
 
@@ -21,10 +23,16 @@ const DriveScene = dynamic(() => import('@/components/drive/DriveScene').then((m
 
 export function DriveClient() {
   const reduced = useStillness();
-  const [night, setNight] = useState(false);
   const [started, setStarted] = useState(false);
   const hostRef = useRef<HTMLDivElement>(null);
   const handle = useRef<CarHandle>({ body: null, speedKph: 0, grounded: 0 });
+  /*
+    The clock and the current district live in refs shared with the scene. They
+    change continuously, and putting either in React state would re-render this
+    tree — and with it the canvas — many times a second.
+  */
+  const clockRef = useRef<DayNight>(makeClock());
+  const zoneRef = useRef<ZoneState>({ active: null, version: 0 });
 
   /* Arrow keys and space drive the car; they must not also scroll the page. */
   useEffect(() => {
@@ -51,8 +59,8 @@ export function DriveClient() {
     >
       {started ? (
         <>
-          <DriveScene night={night} handle={handle} />
-          <Hud handle={handle} />
+          <DriveScene handle={handle} clockRef={clockRef} zoneRef={zoneRef} />
+          <Hud handle={handle} clockRef={clockRef} zoneRef={zoneRef} />
         </>
       ) : (
         <StartCard onStart={() => setStarted(true)} />
@@ -67,17 +75,6 @@ export function DriveClient() {
         Back to the site
       </Link>
 
-      {started ? (
-        <button
-          type="button"
-          onClick={() => setNight((value) => !value)}
-          aria-pressed={night}
-          className="absolute right-5 top-5 z-20 inline-flex items-center gap-2 rounded-full border border-white/12 bg-black/45 px-4 py-2 font-mono text-[0.62rem] uppercase tracking-[0.2em] text-white/70 backdrop-blur transition-colors hover:border-lime/50 hover:text-white"
-        >
-          {night ? <Moon className="size-3.5" /> : <Sun className="size-3.5" />}
-          {night ? 'Night' : 'Day'}
-        </button>
-      ) : null}
     </div>
   );
 }

@@ -11,6 +11,7 @@ import {
   type RapierRigidBody,
 } from '@react-three/rapier';
 import type { DriveInputRef } from './useDriveControls';
+import type { DayNight } from './useDayNight';
 
 /**
  * The physics step, shared with `<Physics timeStep>`.
@@ -78,6 +79,8 @@ interface CarProps {
   input: DriveInputRef;
   spawn?: [number, number, number];
   handle: React.RefObject<CarHandle>;
+  /** Drives the headlights, which come on as the sun goes down. */
+  clock?: React.RefObject<DayNight>;
 }
 
 /** Scratch vectors. Allocating inside a 60Hz loop is how you invite the GC in. */
@@ -98,7 +101,7 @@ const v = {
   impulse: new THREE.Vector3(),
 };
 
-export function Car({ input, spawn = [0, 1, 0], handle }: CarProps) {
+export function Car({ input, spawn = [0, 1, 0], handle, clock }: CarProps) {
   const bodyRef = useRef<RapierRigidBody>(null);
   const wheelRefs = useRef<(THREE.Object3D | null)[]>([]);
   const { world, rapier } = useRapier();
@@ -374,7 +377,7 @@ export function Car({ input, spawn = [0, 1, 0], handle }: CarProps) {
         restitution={0.05}
       />
 
-      <CarBody />
+      <CarBody clock={clock} />
 
       {[0, 1, 2, 3].map((i) => (
         <group
@@ -404,8 +407,28 @@ function respawn(body: RapierRigidBody, spawn: [number, number, number]) {
  * costs a megabyte and a licence to honour. Six boxes in the site's palette read
  * as a car at this camera distance and cost nothing.
  */
-function CarBody() {
+function CarBody({ clock }: { clock?: React.RefObject<DayNight> }) {
   const { halfWidth: w, halfHeight: h, halfLength: l } = CHASSIS;
+  const beams = useRef<THREE.SpotLight[]>([]);
+  const lenses = useRef<THREE.MeshStandardMaterial[]>([]);
+
+  useFrame(() => {
+    /*
+      Headlights follow the same daylight curve as the street lamps rather than a
+      separate switch, so they come up through dusk instead of snapping on. Two
+      spot lights are cheap; two shadow-casting spot lights are not, so they do
+      not cast.
+    */
+    const dark = clock?.current ? 1 - clock.current.daylight : 0;
+    for (const beam of beams.current) {
+      if (!beam) continue;
+      beam.intensity = dark * 90;
+      beam.visible = dark > 0.08;
+    }
+    for (const lens of lenses.current) {
+      if (lens) lens.emissiveIntensity = 0.4 + dark * 3.2;
+    }
+  });
   return (
     <group>
       <mesh castShadow receiveShadow>
@@ -430,10 +453,33 @@ function CarBody() {
       </mesh>
 
       {[-0.46, 0.46].map((x) => (
-        <mesh key={`head-${x}`} position={[x, 0.02, l]}>
-          <boxGeometry args={[0.28, 0.15, 0.08]} />
-          <meshStandardMaterial color="#ffffff" emissive="#eaffd0" emissiveIntensity={2.4} />
-        </mesh>
+        <group key={`head-${x}`}>
+          <mesh position={[x, 0.02, l]}>
+            <boxGeometry args={[0.28, 0.15, 0.08]} />
+            <meshStandardMaterial
+              ref={(material) => {
+                if (material) lenses.current.push(material);
+              }}
+              color="#ffffff"
+              emissive="#eaffd0"
+              emissiveIntensity={0.4}
+              toneMapped={false}
+            />
+          </mesh>
+          <spotLight
+            ref={(light) => {
+              if (light) beams.current.push(light);
+            }}
+            position={[x, 0.06, l]}
+            target-position={[x, -0.6, l + 14]}
+            angle={0.5}
+            penumbra={0.6}
+            distance={34}
+            decay={1.4}
+            intensity={0}
+            color="#eaffd0"
+          />
+        </group>
       ))}
 
       {[-0.46, 0.46].map((x) => (
