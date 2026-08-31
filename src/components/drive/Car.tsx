@@ -64,7 +64,14 @@ const SUSPENSION_REST = 0.3;
   on its own underside no matter what else is tuned. 26 puts equilibrium near
   0.09m, which leaves most of the travel available for bumps and landings.
 */
-const SUSPENSION_STIFFNESS = 4900;
+/*
+  Measured, and the response is bistable rather than smooth: below about 8200 the
+  spring cannot carry the chassis and every wheel sits bottomed at -0.2, which
+  jams them — a bottomed wheel generates enormous corrective friction and absorbs
+  the drive. A direct 3000N.s impulse that should give 10 m/s produced 0.3.
+  At 9000 the car rests on its springs instead and the same impulse gives 9.7.
+*/
+const SUSPENSION_STIFFNESS = 9000;
 /* Rapier's own default is 5m; there is no reason to be stingier than the spring. */
 const SUSPENSION_TRAVEL = 0.5;
 /*
@@ -72,7 +79,7 @@ const SUSPENSION_TRAVEL = 0.5;
   makes it porpoise, 25 throws it 86m into the air. Damping here is not a ratio
   of critical damping and must not be scaled with stiffness.
 */
-const SUSPENSION_DAMPING = 320;
+const SUSPENSION_DAMPING = 2400;
 /*
   300, not 12. Mass turned out to be the single most important number here: a
   12kg chassis is a shopping trolley, and every suspension impulse threw it into
@@ -103,7 +110,7 @@ const GRAVITY = 19.6;
   difference at all because every extra newton was being clipped here. Sized to
   carry this chassis with headroom for landings.
 */
-const MAX_SUSPENSION_FORCE = 20000;
+const MAX_SUSPENSION_FORCE = 40000;
 /*
   This is the rollover parameter, and Rapier says so: "the larger the value, the
   more instantaneous braking will happen (with the risk of causing the vehicle to
