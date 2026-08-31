@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import type { CarHandle } from '@/components/drive/Car';
+import { Hud } from '@/components/drive/Hud';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { ArrowLeft, Moon, Sun } from 'lucide-react';
@@ -22,6 +24,7 @@ export function DriveClient() {
   const [night, setNight] = useState(false);
   const [started, setStarted] = useState(false);
   const hostRef = useRef<HTMLDivElement>(null);
+  const handle = useRef<CarHandle>({ body: null, speedKph: 0, grounded: 0 });
 
   /* Arrow keys and space drive the car; they must not also scroll the page. */
   useEffect(() => {
@@ -46,7 +49,14 @@ export function DriveClient() {
       */
       className="fixed inset-0 z-[60] bg-[#04060a]"
     >
-      {started ? <DriveScene night={night} /> : <StartCard onStart={() => setStarted(true)} />}
+      {started ? (
+        <>
+          <DriveScene night={night} handle={handle} />
+          <Hud handle={handle} />
+        </>
+      ) : (
+        <StartCard onStart={() => setStarted(true)} />
+      )}
 
       {/* ── Chrome ── */}
       <Link

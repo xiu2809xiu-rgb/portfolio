@@ -27,9 +27,16 @@ export const ARENA = 44;
  * being the better answer: it reads as an extension of the portfolio rather than
  * as someone else's world with different furniture in it.
  */
-export function DriveScene({ night }: { night: boolean }) {
+export function DriveScene({
+  night,
+  handle,
+}: {
+  night: boolean;
+  /* Owned by the client wrapper, so the HTML HUD can read it too — it lives
+     outside the canvas and cannot reach into the scene graph. */
+  handle: React.RefObject<CarHandle>;
+}) {
   const input = useDriveControls();
-  const handle = useRef<CarHandle>({ body: null, speedKph: 0, grounded: 0 });
 
   /*
     `?debug` turns on Rapier's collider wireframes and publishes the car handle,
