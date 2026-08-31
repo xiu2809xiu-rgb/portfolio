@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { ArrowUpRight } from 'lucide-react';
-import { footerNav } from '@/content/navigation';
+import { asideNav, footerNav } from '@/content/navigation';
 import { profile } from '@/content/profile';
 
 export function SiteFooter() {
@@ -24,7 +24,7 @@ export function SiteFooter() {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-10 sm:grid-cols-2">
+          <div className="grid grid-cols-2 gap-10 sm:grid-cols-3">
             <nav aria-label="Footer">
               <h2 className="eyebrow mb-4">Site</h2>
               <ul className="space-y-2.5">
@@ -61,6 +61,26 @@ export function SiteFooter() {
                         <ArrowUpRight className="size-3 opacity-0 transition-opacity group-hover:opacity-100" />
                       ) : null}
                     </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/*
+              Deliberately last and deliberately quiet. Neither of these is part
+              of the portfolio; they are what you find if you go looking.
+            */}
+            <div>
+              <h2 className="eyebrow mb-4">Detours</h2>
+              <ul className="space-y-2.5">
+                {asideNav.map((item) => (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      className="link-underline text-sm text-muted-foreground transition-colors hover:text-foreground"
+                    >
+                      {item.label}
+                    </Link>
                   </li>
                 ))}
               </ul>

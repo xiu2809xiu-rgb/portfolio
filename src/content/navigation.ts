@@ -16,3 +16,15 @@ export const footerNav: readonly Link[] = [
   { label: 'Book me', href: '/book' },
   { label: 'Résumé', href: '/docs/Resume_Richie_Koh.pdf', external: true },
 ];
+
+/**
+ * The two pages that are not part of the portfolio proper.
+ *
+ * Kept out of `footerNav` and out of the header on purpose: someone arriving to
+ * read a CV should meet the CV. These are for people who scroll to the bottom
+ * and poke about, which is exactly the audience they are for.
+ */
+export const asideNav: readonly Link[] = [
+  { label: 'Take the car out', href: '/drive' },
+  { label: 'The pitch', href: '/pitch' },
+];

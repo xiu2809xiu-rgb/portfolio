@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { usePathname } from 'next/navigation';
 
 /**
  * The three-layer cursor from the original site, rebuilt for React.
@@ -26,7 +27,16 @@ import { useEffect, useRef, useState } from 'react';
 /** Anything that should make the dot grow. */
 const INTERACTIVE = 'a, button, [role="button"], input, textarea, select, summary, .hov';
 
+/*
+  Routes that take over the whole viewport and bring their own pointer language.
+  The custom cursor is a decoration for reading pages; over a driving game or a
+  page whose whole point is a slider you drag, it is a stray dot floating on top
+  of the thing you are trying to use.
+*/
+const FULL_SCREEN_ROUTES = ['/drive', '/pitch'];
+
 export function CursorLayer() {
+  const pathname = usePathname();
   const [enabled, setEnabled] = useState(false);
 
   const dotRef = useRef<HTMLDivElement>(null);
@@ -129,7 +139,7 @@ export function CursorLayer() {
     };
   }, [enabled]);
 
-  if (!enabled) return null;
+  if (!enabled || FULL_SCREEN_ROUTES.some((route) => pathname?.startsWith(route))) return null;
 
   return (
     <>

@@ -253,6 +253,56 @@
   }
 
   /* Frosted surface used for cards, the nav, and the booking panel. */
+  /* ── The hard-sell dial (/pitch) ──────────────────────────────────────────
+     A real <input type="range">, restyled rather than replaced: it arrives with
+     keyboard support, arrow-key stepping and a screen-reader value for free, and
+     a div with a drag handler would have to reimplement all three badly.
+  */
+  .pitch-range {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 2px;
+    background: rgb(255 255 255 / 0.25);
+    cursor: pointer;
+  }
+
+  .pitch-range.pitch-range-light {
+    background: rgb(0 0 0 / 0.2);
+  }
+
+  .pitch-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 1rem;
+    height: 1rem;
+    border: none;
+    border-radius: 999px;
+    background: #ffffff;
+    cursor: grab;
+  }
+
+  .pitch-range.pitch-range-light::-webkit-slider-thumb {
+    background: #000000;
+  }
+
+  .pitch-range::-moz-range-thumb {
+    width: 1rem;
+    height: 1rem;
+    border: none;
+    border-radius: 999px;
+    background: #ffffff;
+    cursor: grab;
+  }
+
+  .pitch-range.pitch-range-light::-moz-range-thumb {
+    background: #000000;
+  }
+
+  .pitch-range:focus-visible {
+    outline: 2px solid var(--brand-lime);
+    outline-offset: 6px;
+  }
+
   /* ── Toasts ───────────────────────────────────────────────────────────────
      Rebuilt against Apple's Human Interface Guidelines for notifications and the
      general toast literature, both of which contradicted the first attempt:
@@ -544,4 +594,48 @@
    the guard script sets this attribute before the first paint. */
 [data-intro='skip'] [data-intro-curtain] {
   display: none !important;
+}
+
+/* ── /pitch escalation ──────────────────────────────────────────────────────
+   Each of these switches on at a level of the slider, so the page accumulates
+   noise rather than cutting between designs. All of them are suppressed for
+   reduced motion in the component itself, where the level checks live.
+*/
+@keyframes pitch-shake {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  25% { transform: translate3d(-2px, 1px, 0); }
+  50% { transform: translate3d(2px, -1px, 0); }
+  75% { transform: translate3d(-1px, -2px, 0); }
+}
+
+@keyframes pitch-strobe {
+  0%, 100% { filter: none; }
+  50% { filter: invert(1) hue-rotate(35deg); }
+}
+
+/* Carries the -50% because the hand it drives is centred by a translate. */
+@keyframes pitch-point {
+  0%, 100% { transform: translate(-50%, 0) rotate(0deg); }
+  50% { transform: translate(-50%, 10px) rotate(-8deg); }
+}
+
+/* The cat is not centred, so it gets a version without the offset. */
+@keyframes pitch-wiggle {
+  0%, 100% { transform: rotate(-4deg); }
+  50% { transform: rotate(6deg) translateY(-6px); }
+}
+
+@keyframes pitch-slide {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-33.333%, 0, 0); }
+}
+
+@keyframes pitch-slide-back {
+  from { transform: translate3d(-33.333%, 0, 0); }
+  to { transform: translate3d(0, 0, 0); }
+}
+
+@keyframes pitch-fly {
+  from { transform: translate3d(-60vw, 0, 0); }
+  to { transform: translate3d(110vw, 0, 0); }
 }
