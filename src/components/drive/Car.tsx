@@ -191,7 +191,15 @@ export function Car({ input, spawn = [0, 1, 0], handle, clock }: CarProps) {
     v.forward.set(0, 0, 1).applyQuaternion(v.quat);
     const forwardSpeed = v.vel.dot(v.forward);
 
-    const steerAngle = (steer * MAX_STEER) / (1 + Math.abs(forwardSpeed) * STEER_FALLOFF);
+    /*
+      Negated, and the sign is not arbitrary. `steer` is the driver's intent:
+      +1 means "go right". A positive rotation about the contact normal turns the
+      wheel's forward vector toward world +X — and the chase camera looks along
+      the car's +Z, which puts its own right vector at world -X. So world +X is
+      screen LEFT, and an unnegated positive steer sends the car the opposite way
+      to the key that asked for it.
+    */
+    const steerAngle = (-steer * MAX_STEER) / (1 + Math.abs(forwardSpeed) * STEER_FALLOFF);
     v.down.set(0, -1, 0).applyQuaternion(v.quat);
 
     let grounded = 0;
@@ -411,7 +419,30 @@ function CarBody({ clock }: { clock?: React.RefObject<DayNight> }) {
   const { halfWidth: w, halfHeight: h, halfLength: l } = CHASSIS;
   const beams = useRef<THREE.SpotLight[]>([]);
   const lenses = useRef<THREE.MeshStandardMaterial[]>([]);
+  const aims = useRef<THREE.Object3D[]>([]);
 
+  /*
+    A SpotLight aims at its `target`, which is a separate object three.js expects
+    to find in the scene — and `target-position` sets that object's position in
+    WORLD space. Left like that the beam pointed at a fixed patch of ground and
+    stayed there while the car drove away from it, which is exactly what the
+    screenshot showed. Parenting each target inside the car group and assigning it
+    here means the beam turns with the car, including as it pitches over a ramp.
+  */
+  useEffect(() => {
+    beams.current.forEach((beam, i) => {
+      const aim = aims.current[i];
+      if (beam && aim) beam.target = aim;
+    });
+  }, []);
+
+  /*
+    Mutating lights in the frame loop, which the React Compiler reads as
+    render-phase mutation. It is not: this is the render loop, and routing a
+    headlight's intensity through state would re-render the car sixty times a
+    second.
+  */
+  /* eslint-disable react-hooks/immutability */
   useFrame(() => {
     /*
       Headlights follow the same daylight curve as the street lamps rather than a
@@ -429,6 +460,7 @@ function CarBody({ clock }: { clock?: React.RefObject<DayNight> }) {
       if (lens) lens.emissiveIntensity = 0.4 + dark * 3.2;
     }
   });
+  /* eslint-enable react-hooks/immutability */
   return (
     <group>
       <mesh castShadow receiveShadow>
@@ -466,12 +498,17 @@ function CarBody({ clock }: { clock?: React.RefObject<DayNight> }) {
               toneMapped={false}
             />
           </mesh>
+          <object3D
+            ref={(node) => {
+              if (node) aims.current.push(node);
+            }}
+            position={[x * 0.4, -1.1, l + 16]}
+          />
           <spotLight
             ref={(light) => {
               if (light) beams.current.push(light);
             }}
             position={[x, 0.06, l]}
-            target-position={[x, -0.6, l + 14]}
             angle={0.5}
             penumbra={0.6}
             distance={34}

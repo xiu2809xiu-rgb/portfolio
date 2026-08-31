@@ -27,7 +27,14 @@ for (const key of ['KeyD', 'KeyA']) {
   let delta = after - before;
   while (delta > 180) delta -= 360;
   while (delta < -180) delta += 360;
-  const turned = delta > 5 ? 'RIGHT' : delta < -5 ? 'LEFT' : 'straight';
+  /*
+    Sign convention, stated once so it cannot be guessed at again: heading grows
+    as the nose turns toward world +X, and the chase camera looks along the car's
+    +Z, so its right vector is world -X. World +X is therefore SCREEN LEFT, and a
+    positive heading change is a left turn. Calling it "right" is what let a
+    reversed steering wheel pass this test.
+  */
+  const turned = delta > 5 ? 'LEFT' : delta < -5 ? 'RIGHT' : 'straight';
   console.log(`${key} (expect ${key === 'KeyD' ? 'RIGHT' : 'LEFT'}) -> heading changed ${delta.toFixed(0)}deg = ${turned}`);
   await page.waitForTimeout(800);
 }

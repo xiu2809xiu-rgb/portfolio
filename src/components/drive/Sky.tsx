@@ -70,7 +70,13 @@ export function Sky({
     const ambient = ambientRef.current;
     if (ambient) {
       ambient.color.copy(colours.ambient);
-      ambient.intensity = 0.25 + state.daylight * 0.75;
+      /*
+        A floor of 0.38 rather than 0.25. Deep night with only headlights is
+        atmospheric for about ten seconds and then simply hard to drive in — you
+        cannot see the kerb you are about to hit. This keeps shapes readable
+        while leaving the headlights clearly worth having.
+      */
+      ambient.intensity = 0.38 + state.daylight * 0.62;
     }
 
     const disc = discRef.current;
