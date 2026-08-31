@@ -608,21 +608,49 @@
   75% { transform: translate3d(-1px, -2px, 0); }
 }
 
-@keyframes pitch-strobe {
-  0%, 100% { filter: none; }
-  50% { filter: invert(1) hue-rotate(35deg); }
+/*
+  A tinted pulse, not an inverting strobe.
+
+  The first version flipped the whole page with filter: invert(1) three times a
+  second. It looked like grey mush in any frame caught mid-flash, and a
+  full-screen luminance flip at that rate is a photosensitive-seizure risk —
+  which prefers-reduced-motion does not reliably protect against, because most
+  people who need that protection have never set it. This keeps the sense of the
+  page overheating without ever inverting luminance.
+*/
+@keyframes pitch-overheat {
+  0%, 100% { background-color: #05070a; }
+  50% { background-color: #12200c; }
 }
 
-/* Carries the -50% because the hand it drives is centred by a translate. */
-@keyframes pitch-point {
-  0%, 100% { transform: translate(-50%, 0) rotate(0deg); }
-  50% { transform: translate(-50%, 10px) rotate(-8deg); }
+/* Carries the -50% because the arrow it drives is centred by a translate. */
+@keyframes pitch-hammer {
+  0%, 100% { transform: translate(-50%, 0); }
+  55% { transform: translate(-50%, 14px); }
 }
 
-/* The cat is not centred, so it gets a version without the offset. */
-@keyframes pitch-wiggle {
-  0%, 100% { transform: rotate(-4deg); }
-  50% { transform: rotate(6deg) translateY(-6px); }
+/* A stamp lands hard, overshoots, settles. */
+@keyframes pitch-stamp {
+  0% { transform: rotate(-14deg) scale(1.5); opacity: 0; }
+  18% { transform: rotate(-14deg) scale(0.92); opacity: 1; }
+  26% { transform: rotate(-14deg) scale(1.04); }
+  34%, 100% { transform: rotate(-14deg) scale(1); opacity: 1; }
+}
+
+/* Work reels tumble across, each lane offset by its own delay. */
+@keyframes pitch-drift {
+  from { transform: translate3d(-40vw, 0, 0) rotate(-6deg); }
+  to { transform: translate3d(115vw, 0, 0) rotate(8deg); }
+}
+
+@keyframes pitch-fall {
+  from { transform: translate3d(0, -10vh, 0) rotate(0deg); }
+  to { transform: translate3d(4vw, 115vh, 0) rotate(540deg); }
+}
+
+@keyframes pitch-pulse {
+  from { transform: scale(0.35); opacity: 0.9; }
+  to { transform: scale(2.4); opacity: 0; }
 }
 
 @keyframes pitch-slide {

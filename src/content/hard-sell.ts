@@ -6,72 +6,90 @@
  * participant counts, the build window. The volume rises; the substance does not
  * inflate. A line that lied would stop being funny and start being a liability
  * in front of the exact people this page is aimed at.
+ *
+ * Lines are segments rather than strings so a phrase can carry a link. The rule
+ * is that a link only ever names the thing it points at — "the hackathon" goes to
+ * the hackathon project, not to a contact form — because a reader who follows one
+ * and lands somewhere unrelated will not follow a second.
  */
-export const hardSellLines: readonly string[] = [
+export type Segment = string | { readonly text: string; readonly href: string };
+export type SellLine = readonly Segment[];
+
+const to = (text: string, href: string): Segment => ({ text, href });
+
+export const hardSellLines: readonly SellLine[] = [
   // ── 1–8 · deadpan ────────────────────────────────────────────────────────
-  'So, yeah, I write software. What of it?',
-  'Richie. Full-stack. Singapore. That is the entire pitch.',
-  'I build things for the web. You may carry on with your day.',
-  'There is a portfolio. It is on this site. No pressure.',
-  'I am a software developer. Some of the software works.',
-  'Available for a 2027 internship, if that is a thing you need.',
-  'Not going to oversell this. The work is a few clicks away.',
-  'Diploma in IT at Nanyang Polytechnic. Out in 2028.',
+  ['So, yeah, I write software. What of it?'],
+  ['Richie. Full-stack. Singapore. That is the entire pitch.'],
+  ['I build things for the web. You may carry on with your day.'],
+  ['There is a ', to('portfolio', '/work'), '. It is right there. No pressure.'],
+  ['I am a software developer. Some of the software works.'],
+  ['Available for a 2027 internship, if that is a thing you need.'],
+  ['Not going to oversell this. The ', to('work', '/work'), ' is a click away.'],
+  ['Diploma in IT at Nanyang Polytechnic. Out in 2028.'],
 
   // ── 9–16 · mildly self-aware ─────────────────────────────────────────────
-  'I should probably mention I won something recently.',
-  'First place at the NYP × AWS Hackathon 2026. Casually dropped.',
-  'Five shipped projects. I counted them twice to be sure.',
-  'Front-end, back-end, and the UX decisions in between.',
-  'I once built twenty-five page components in one night. On purpose.',
-  'The overnight one placed first, if we are keeping score.',
-  'We are keeping score.',
-  'Twenty-plus technologies. Six awards and certifications. Still counting.',
+  ['I should probably mention I won something recently.'],
+  ['First place at the ', to('NYP × AWS Hackathon 2026', '/work/smartrecap'), '. Casually dropped.'],
+  ['Five ', to('shipped projects', '/work'), '. I counted them twice to be sure.'],
+  ['Front-end, back-end, and the ', to('UX decisions', '/#skills'), ' in between.'],
+  ['I once built twenty-five page components in one night. On purpose.'],
+  ['The ', to('overnight one', '/work/smartrecap'), ' placed first, if we are keeping score.'],
+  ['We are keeping score.'],
+  ['Twenty-plus technologies. Six ', to('awards and certifications', '/#achievements'), '. Still counting.'],
 
   // ── 17–24 · actually selling now ─────────────────────────────────────────
-  'Let me be direct: I would be good at this.',
-  'SmartRecap cites the exact slide behind every claim. That was my call.',
-  'I built the entire client for it. Every component.',
-  'CertAIn scored a mean SUS of 74.2 across nine participants.',
-  'I ran that study myself. Moderated, think-aloud, three scenarios.',
-  'Five of nine users were blocked by a popup nobody on the team could see.',
-  'Finding that is the job. Anyone can ship the happy path.',
-  'Flask, React, TypeScript, Next, Postgres, three.js. Pick a stack.',
+  ['Let me be direct: I would be good at this.'],
+  [to('SmartRecap', '/work/smartrecap'), ' cites the exact slide behind every claim. That was the point.'],
+  ['I built the entire client for it. Every component.'],
+  [to('CertAIn', '/work/certain'), ' scored a mean SUS of 74.2 across nine participants.'],
+  ['I ran that ', to('study', '/work/certain'), ' myself. Moderated, think-aloud, three scenarios.'],
+  ['Five of nine users were blocked by a popup nobody on the team could see.'],
+  ['Finding that is the job. Anyone can ship the happy path.'],
+  ['Flask, React, TypeScript, Next, Postgres, three.js. ', to('Pick a stack', '/#skills'), '.'],
 
   // ── 25–32 · keen ─────────────────────────────────────────────────────────
-  'You are still reading. That is a strong signal for both of us.',
-  'Twelve Flask routes. Six tables. Fifteen validation rules. On the server, where they count.',
-  'This site books real meetings on a real calendar. Try it.',
-  'The car on this site has working suspension. I could not help myself.',
-  'I read the docs. All of them. It is a problem.',
-  'I would rather ship one honest feature than five that need explaining.',
-  'Hire me and I will tell you when your idea is wrong. Politely.',
-  'Interns who ask why are cheaper than engineers who fix it later.',
+  ['You are still reading. That is a strong signal for both of us.'],
+  [
+    'Twelve routes, six tables, fifteen validation rules — ',
+    to('on the server', '/work/singink-support'),
+    ', where they count.',
+  ],
+  ['This site books ', to('real meetings on a real calendar', '/book'), '. Try it.'],
+  ['The ', to('car on this site', '/drive'), ' has working suspension. I could not help myself.'],
+  ['I ', to('write about the things I get wrong', '/blog'), '. It is a short list. Allegedly.'],
+  ['I would rather ship one honest feature than five that need explaining.'],
+  ['Hire me and I will tell you when your idea is wrong. Politely.'],
+  ['Interns who ask why are cheaper than engineers who fix it later.'],
 
   // ── 33–40 · infomercial ──────────────────────────────────────────────────
-  'AVAILABLE NOW. Singapore. 2027 internship. Say the word.',
-  'PROVEN to win hackathons. PROVEN to run usability studies. PROVEN to ship.',
-  'ACT NOW and receive a developer who writes his own commit messages.',
-  'THAT IS RIGHT. Full sentences. In the past tense. Explaining WHY.',
-  'OTHER CANDIDATES WILL SEND A PDF. I SENT YOU A WHOLE WEBSITE.',
-  'WITH A BOOKING SYSTEM. AND A PHYSICS ENGINE. AND A BLOG.',
-  'THE OTHER TEAM IS ALREADY READING THIS PAGE. PROBABLY.',
-  'CAN YOU AFFORD TO FIND OUT? CAN YOU?',
+  ['AVAILABLE NOW. SINGAPORE. 2027 INTERNSHIP. SAY THE WORD.'],
+  ['PROVEN TO ', to('WIN HACKATHONS', '/work/smartrecap'), '. PROVEN TO ', to('RUN STUDIES', '/work/certain'), '. PROVEN TO SHIP.'],
+  ['ACT NOW AND RECEIVE A DEVELOPER WHO WRITES HIS OWN COMMIT MESSAGES.'],
+  ['THAT IS RIGHT. FULL SENTENCES. IN THE PAST TENSE. EXPLAINING WHY.'],
+  ['OTHER CANDIDATES WILL SEND A PDF. I SENT YOU ', to('A WHOLE WEBSITE', '/'), '.'],
+  ['WITH A ', to('BOOKING SYSTEM', '/book'), '. AND A ', to('PHYSICS ENGINE', '/drive'), '. AND A ', to('BLOG', '/blog'), '.'],
+  ['THE OTHER TEAM IS ALREADY READING THIS PAGE. PROBABLY.'],
+  ['CAN YOU AFFORD TO FIND OUT? CAN YOU?'],
 
   // ── 41–46 · unhinged ─────────────────────────────────────────────────────
-  'BOOK THE MEETING. THE CALENDAR IS RIGHT THERE. IT IS FREE.',
-  'I HAVE CLEARED MY SCHEDULE. ADMITTEDLY IT WAS ALREADY CLEAR.',
-  'FIRST PLACE. NYP × AWS 2026. I AM GOING TO KEEP SAYING IT.',
-  'SEVENTY-FOUR POINT TWO. THAT IS A REAL SUS SCORE. LOOK IT UP.',
-  'TWENTY-FIVE COMPONENTS. ONE NIGHT. SIXTEEN AND A HALF HOURS.',
-  'I DID NOT SLEEP AND WE WON AND I WOULD DO IT AGAIN.',
+  ['BOOK THE MEETING. THE CALENDAR IS RIGHT THERE. IT IS FREE.'],
+  ['I HAVE CLEARED MY SCHEDULE. ADMITTEDLY IT WAS ALREADY CLEAR.'],
+  ['FIRST PLACE. NYP × AWS 2026. I AM GOING TO KEEP SAYING IT.'],
+  ['SEVENTY-FOUR POINT TWO. THAT IS A REAL SUS SCORE. LOOK IT UP.'],
+  ['TWENTY-FIVE COMPONENTS. ONE NIGHT. SIXTEEN AND A HALF HOURS.'],
+  ['I DID NOT SLEEP AND WE WON AND I WOULD DO IT AGAIN.'],
 
   // ── 47–50 · total collapse ───────────────────────────────────────────────
-  'EMAIL ME. BOOK ME. THE BUTTONS ARE ENORMOUS NOW. I MADE THEM ENORMOUS.',
-  'THERE IS A CAT ON THE PHONE. THE CAT IS ALSO ASKING YOU TO HIRE ME.',
-  'HIRE RICHIE. HIRE RICHIE. HIRE RICHIE. HIRE RICHIE.',
-  'HIRE RICHIE KOH',
+  ['EMAIL ME. BOOK ME. THE BUTTONS ARE ENORMOUS NOW. I MADE THEM ENORMOUS.'],
+  ['THE PROJECTS ARE FLYING PAST. THAT IS ALL REAL WORK. LOOK AT IT.'],
+  ['HIRE RICHIE. HIRE RICHIE. HIRE RICHIE. HIRE RICHIE.'],
+  ['HIRE RICHIE KOH'],
 ];
+
+/** Flattened text, for the screen-reader value on the slider. */
+export const lineText = (line: SellLine): string =>
+  line.map((part) => (typeof part === 'string' ? part : part.text)).join('');
 
 /** The five visual regimes the page moves through, keyed by slider level. */
 export type SellStage = 'deadpan' | 'warming' | 'keen' | 'infomercial' | 'unhinged';
@@ -93,4 +111,22 @@ export const shoutingPoints: readonly string[] = [
   '5 SHIPPED PROJECTS',
   'FULL-STACK & UX',
   'SINGAPORE',
+];
+
+/**
+ * Real work, thrown across the screen at the loud end.
+ *
+ * These are the same reels the work carousel plays. Using them here means the
+ * chaos is made of the portfolio itself rather than of stock imagery — and it
+ * costs nothing extra, because a visitor who has seen the home page already has
+ * them cached.
+ */
+export const flyingWork: readonly { title: string; src: string; href: string }[] = [
+  { title: 'SmartRecap', src: '/video/work/smartrecap.mp4', href: '/work/smartrecap' },
+  { title: 'Singink', src: '/video/work/singink-support.mp4', href: '/work/singink-support' },
+  {
+    title: 'Table Tennis CCA',
+    src: '/video/work/table-tennis-cca-website.mp4',
+    href: '/work/table-tennis-cca-website',
+  },
 ];
