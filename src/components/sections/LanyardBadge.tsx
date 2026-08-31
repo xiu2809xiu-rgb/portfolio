@@ -57,13 +57,18 @@ export function LanyardBadge({ className }: { className?: string }) {
   return (
     <div
       ref={hostRef}
-      className={cn('relative h-[30rem] w-full sm:h-[34rem] lg:h-[38rem]', className)}
+      className={cn('relative h-[34rem] w-full sm:h-[38rem] lg:h-[44rem]', className)}
     >
       {interactive ? (
         near ? (
           <>
             <Lanyard
-              position={[0, 0, 13]}
+              /*
+                Closer than the component's default. At 13 the badge sat small in
+                its container and the card text — which is a real name, course and
+                contact details — was too fine to read without leaning in.
+              */
+              position={[0, 0, 10]}
               gravity={[0, -40, 0]}
               fov={20}
               transparent

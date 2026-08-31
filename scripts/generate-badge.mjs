@@ -13,11 +13,15 @@ import { readFileSync, mkdirSync } from 'node:fs';
 
 /**
  * The card mesh maps each face to a 0.5 x 0.755 slice of its texture atlas, so a
- * face is 2:3-ish in portrait. Rendering at 2x that keeps it crisp when the card
- * swings close to the camera.
+ * face is 2:3-ish in portrait.
+ *
+ * Rendered at 1000px wide rather than 660: the badge hangs close enough to the
+ * camera that the old texture was visibly soft, and every type size below is now
+ * a share of this width, so the layout scales with it rather than staying small
+ * inside a bigger canvas.
  */
-const WIDTH = 660;
-const HEIGHT = 1000;
+const WIDTH = 1000;
+const HEIGHT = 1515;
 
 const OUT_DIR = 'public/img/lanyard';
 mkdirSync(OUT_DIR, { recursive: true });
@@ -33,16 +37,16 @@ const shell = (body) => `<!doctype html>
   *{margin:0;padding:0;box-sizing:border-box}
   body{width:${WIDTH}px;height:${HEIGHT}px;overflow:hidden;
        font-family:'Outfit',sans-serif;background:#0b0e13;color:#e9ecef}
-  .card{position:relative;width:100%;height:100%;padding:52px 46px;display:flex;flex-direction:column;
+  .card{position:relative;width:100%;height:100%;padding:74px 66px;display:flex;flex-direction:column;
         background:
           radial-gradient(circle at 15% 0%, rgba(180,255,57,.16), transparent 45%),
           radial-gradient(circle at 100% 100%, rgba(57,255,216,.10), transparent 45%),
           #0b0e13;}
   .mono{font-family:'Space Mono',monospace}
-  .punch{position:absolute;top:26px;left:50%;transform:translateX(-50%);
-         width:104px;height:26px;border-radius:999px;background:#05070a;
+  .punch{position:absolute;top:34px;left:50%;transform:translateX(-50%);
+         width:150px;height:36px;border-radius:999px;background:#05070a;
          box-shadow:inset 0 0 0 2px rgba(255,255,255,.10)}
-  .rule{height:2px;background:linear-gradient(90deg,#b4ff39,#39ffd8);border-radius:2px}
+  .rule{height:4px;background:linear-gradient(90deg,#b4ff39,#39ffd8);border-radius:2px}
 </style></head><body>${body}</body></html>`;
 
 const front = shell(`
@@ -50,22 +54,29 @@ const front = shell(`
   <div class="punch"></div>
 
   <div style="display:flex;align-items:center;justify-content:space-between;margin-top:26px">
-    <div style="font-size:26px;font-weight:800;letter-spacing:-.5px">RICHIE<span style="color:#b4ff39">.</span>KOH</div>
-    <div class="mono" style="font-size:11px;letter-spacing:2px;color:#8b949e">2025—2028</div>
+    <div style="font-size:52px;font-weight:800;letter-spacing:-1px">RICHIE<span style="color:#b4ff39">.</span>KOH</div>
+    <div class="mono" style="font-size:20px;letter-spacing:3px;color:#8b949e">2025—2028</div>
   </div>
 
-  <div class="rule" style="margin:22px 0 10px"></div>
+  <div class="rule" style="margin:32px 0 14px"></div>
 
   <div style="flex:1;display:flex;flex-direction:column;justify-content:center">
-  <div style="width:250px;height:250px;margin:0 auto;border-radius:22px;overflow:hidden;
-              box-shadow:0 0 0 2px rgba(180,255,57,.30), 0 24px 48px -18px rgba(0,0,0,.9)">
-    <img src="${photo}" style="width:100%;height:100%;object-fit:cover;object-position:center top">
+  <!--
+    The source photograph averages 166/154/145 across its channels and clips to
+    255 in all three — bright enough that the face washed out once the card's own
+    lime gradient was laid over it. Pulling brightness down and contrast up
+    recovers the features without making it look graded.
+  -->
+  <div style="width:470px;height:470px;margin:0 auto;border-radius:34px;overflow:hidden;
+              box-shadow:0 0 0 3px rgba(180,255,57,.34), 0 34px 70px -24px rgba(0,0,0,.95)">
+    <img src="${photo}" style="width:100%;height:100%;object-fit:cover;object-position:center top;
+                               filter:brightness(.84) contrast(1.2) saturate(1.04)">
   </div>
 
-  <div style="margin-top:32px;text-align:center">
-    <div style="font-size:40px;font-weight:800;letter-spacing:-1.2px;line-height:1.06">Koh Shan Shun</div>
-    <div style="font-size:40px;font-weight:800;letter-spacing:-1.2px;line-height:1.06;color:#b4ff39">Richie</div>
-    <div class="mono" style="margin-top:16px;font-size:12.5px;letter-spacing:2.4px;color:#8b949e;text-transform:uppercase">
+  <div style="margin-top:46px;text-align:center">
+    <div style="font-size:84px;font-weight:800;letter-spacing:-2.4px;line-height:1.04">Koh Shan Shun</div>
+    <div style="font-size:84px;font-weight:800;letter-spacing:-2.4px;line-height:1.04;color:#b4ff39">Richie</div>
+    <div class="mono" style="margin-top:26px;font-size:26px;letter-spacing:4px;color:#8b949e;text-transform:uppercase">
       Software&nbsp;Developer
     </div>
   </div>
@@ -73,9 +84,9 @@ const front = shell(`
 
   <div style="display:flex;align-items:flex-end;justify-content:space-between">
     <div>
-      <div class="mono" style="font-size:9.5px;letter-spacing:2.2px;color:#4b5563;text-transform:uppercase">Institution</div>
-      <div style="font-size:15px;font-weight:600;margin-top:5px">Nanyang Polytechnic</div>
-      <div class="mono" style="font-size:11px;color:#8b949e;margin-top:3px">Diploma in Information Technology</div>
+      <div class="mono" style="font-size:18px;letter-spacing:3.4px;color:#6b7280;text-transform:uppercase">Institution</div>
+      <div style="font-size:30px;font-weight:600;margin-top:9px">Nanyang Polytechnic</div>
+      <div class="mono" style="font-size:20px;color:#8b949e;margin-top:6px">Diploma in Information Technology</div>
     </div>
     <div style="display:flex;flex-direction:column;gap:3px;align-items:flex-end">
       ${Array.from({ length: 9 })
@@ -89,15 +100,17 @@ const back = shell(`
 <div class="card">
   <div class="punch"></div>
 
-  <div style="margin-top:26px">
-    <div class="mono" style="font-size:10px;letter-spacing:2.6px;color:#4b5563;text-transform:uppercase">Contact</div>
-    <div class="rule" style="margin-top:14px;width:76px"></div>
+  <div style="margin-top:36px">
+    <div class="mono" style="font-size:19px;letter-spacing:4px;color:#6b7280;text-transform:uppercase">Contact</div>
+    <div class="rule" style="margin-top:20px;width:120px"></div>
   </div>
 
-  <div style="flex:1;margin-top:38px;display:flex;flex-direction:column;justify-content:center;gap:34px">
+  <div style="flex:1;margin-top:52px;display:flex;flex-direction:column;justify-content:center;gap:46px">
     ${[
+      /* No phone number. It came off the résumé and the site deliberately, and a
+         badge texture is just as public as either of them. */
       ['Email', '251651x@mymail.nyp.edu.sg'],
-      ['Phone', '+65 8750 2535'],
+      ['Book a session', 'richiekoh.dev/book'],
       ['LinkedIn', 'in/richiekoh2809'],
       ['GitHub', 'Richie280907'],
       ['Based in', 'Singapore · GMT+8'],
@@ -105,8 +118,8 @@ const back = shell(`
       .map(
         ([label, value]) => `
       <div>
-        <div class="mono" style="font-size:9.5px;letter-spacing:2.2px;color:#4b5563;text-transform:uppercase">${label}</div>
-        <div class="mono" style="font-size:15px;margin-top:6px;color:#e9ecef">${value}</div>
+        <div class="mono" style="font-size:18px;letter-spacing:3.4px;color:#6b7280;text-transform:uppercase">${label}</div>
+        <div class="mono" style="font-size:29px;margin-top:10px;color:#e9ecef">${value}</div>
       </div>`,
       )
       .join('')}
@@ -116,8 +129,8 @@ const back = shell(`
     <div class="rule" style="opacity:.5;margin-bottom:20px"></div>
     <div style="display:flex;align-items:flex-end;justify-content:space-between">
       <div>
-        <div style="font-size:19px;font-weight:700;letter-spacing:-.4px">richiekoh.dev</div>
-        <div class="mono" style="font-size:10.5px;color:#8b949e;margin-top:4px">Drag me · I swing</div>
+        <div style="font-size:38px;font-weight:700;letter-spacing:-.8px">richiekoh.dev</div>
+        <div class="mono" style="font-size:20px;color:#8b949e;margin-top:8px">Drag me · I swing</div>
       </div>
       <div style="display:flex;gap:2.5px;align-items:flex-end;height:44px">
         ${Array.from({ length: 26 })
