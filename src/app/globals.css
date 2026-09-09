@@ -667,3 +667,144 @@
   from { transform: translate3d(-60vw, 0, 0); }
   to { transform: translate3d(110vw, 0, 0); }
 }
+
+/* ── Holographic card ──────────────────────────────────────────────
+   A layered-parallax foil card, in the manner of LerSent001/holo-card (MIT).
+   That project generates its layers with an image model and ships a standalone
+   HTML file; this is the same rendering idea rebuilt from authored markup, so
+   the type stays crisp at any size and the card inherits the site's palette
+   instead of arriving with its own.
+
+   Everything the pointer drives is a custom property written by rAF. Nothing
+   here transitions `transform` on the tilt layer: the loop already smooths it,
+   and a transition on top of per-frame writes smears the motion.
+   ────────────────────────────────────────────────────────────────── */
+@layer components {
+  .holo-viewport {
+    perspective: 900px;
+    perspective-origin: center;
+  }
+
+  .holo-tilt {
+    transform-style: preserve-3d;
+    transform: rotateX(var(--holo-rx, 0deg)) rotateY(var(--holo-ry, 0deg));
+    will-change: transform;
+  }
+
+  .holo-flip {
+    position: relative;
+    transform-style: preserve-3d;
+    transform: rotateY(var(--holo-flip, 0deg));
+    transition: transform 0.8s var(--ease-out-expo);
+  }
+
+  /* Both faces occupy the same cell of a 1×1 grid, so the card is exactly as
+     tall as its taller face and neither needs a hard-coded height. */
+  .holo-face {
+    grid-area: 1 / 1;
+    transform-style: preserve-3d;
+  }
+  .holo-face--back {
+    transform: rotateY(180deg);
+  }
+
+  /* `backface-visibility` has to reach the layers, not just the face.
+     Inside a `preserve-3d` context every descendant is rendered in the shared
+     3D space and is culled on its own account, so a face that hides its own
+     backface still lets each of its children show through from behind — which
+     is exactly what happened: the card back's rays were visible across the
+     front. */
+  .holo-face,
+  .holo-face * {
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+
+  /* ── Foil ───────────────────────────────────────────────────────────
+     Two passes, because a real foil is two things: a diffraction rainbow that
+     slides as the angle changes, and a specular highlight sitting under the
+     light. One gradient doing both looks like neither — and they belong at
+     different depths, which is why they are separate classes rather than two
+     pseudo-elements of one.
+
+     The spectrum is weighted towards the site's lime and aqua rather than run
+     evenly around the wheel. An even spectrum reads as someone else's trading
+     card, which is not the association this page wants. */
+  .holo-foil::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background-image:
+      repeating-linear-gradient(
+        108deg,
+        rgb(180 255 57 / 0.5) 0%,
+        rgb(57 255 216 / 0.46) 4.5%,
+        rgb(120 170 255 / 0.4) 8.5%,
+        rgb(196 130 255 / 0.42) 12.5%,
+        rgb(255 160 120 / 0.36) 16.5%,
+        rgb(180 255 57 / 0.5) 21%
+      ),
+      /* The mask. Tight on purpose: a foil catches the light in a band that
+         travels across the card, and letting the rainbow cover the whole
+         surface at once buries the artwork under it — which is what the first
+         two attempts at this did. */
+      radial-gradient(
+        farthest-corner circle at var(--holo-px, 50%) var(--holo-py, 50%),
+        rgb(255 255 255 / 0.6) 2%,
+        rgb(120 120 120 / 0.2) 26%,
+        rgb(0 0 0 / 0.95) 62%
+      );
+    /* ~75px between bands on a 352px card: enough to read as diffraction, not
+       so many that it turns into a screen-door pattern. */
+    background-size: 150% 150%, 130% 130%;
+    background-position: var(--holo-shift, 50%) var(--holo-py, 50%), center;
+    /* The radial pass keeps the rainbow local to the light rather than washing
+       the whole card — it multiplies the spectrum down to black away from the
+       pointer, so there is a lit band that travels instead of a tint. */
+    background-blend-mode: multiply;
+    mix-blend-mode: screen;
+    filter: contrast(1.35) saturate(1.15);
+    opacity: var(--holo-foil, 0.18);
+    transition: opacity 0.4s var(--ease-out-expo);
+  }
+
+  /* Specular. `overlay` rather than `screen` so it brightens the light parts of
+     the art and leaves the dark plate alone, which is how a gloss behaves. */
+  .holo-gloss::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background: radial-gradient(
+      farthest-corner circle at var(--holo-px, 50%) var(--holo-py, 50%),
+      rgb(255 255 255 / 0.4) 0%,
+      rgb(255 255 255 / 0.08) 18%,
+      transparent 46%
+    );
+    mix-blend-mode: overlay;
+    opacity: var(--holo-glare, 0);
+    transition: opacity 0.4s var(--ease-out-expo);
+  }
+
+  /* A moving edge light, so the card has a lit side rather than sitting flat. */
+  .holo-rim {
+    box-shadow:
+      0 0 0 1px rgb(255 255 255 / 0.06),
+      0 30px 70px -30px rgb(0 0 0 / 0.9),
+      var(--holo-rim-x, 0px) var(--holo-rim-y, 0px) 45px -25px rgb(180 255 57 / 0.45);
+  }
+
+  /* Reduced motion keeps the foil — it is a still gradient, not movement — but
+     the card no longer follows the pointer and the flip crossfades. */
+  @media (prefers-reduced-motion: reduce) {
+    .holo-tilt {
+      transform: none !important;
+    }
+    .holo-flip {
+      transition-duration: 0.001ms;
+    }
+  }
+}

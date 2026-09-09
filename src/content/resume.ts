@@ -161,6 +161,7 @@ export const processSteps: readonly ProcessStep[] = [
 export const achievements: readonly Achievement[] = [
   {
     icon: '🥇',
+    featured: true,
     title: '1st Place — NYP × AWS Hackathon',
     organisation: 'Nanyang Polytechnic × AWS',
     year: '2026',

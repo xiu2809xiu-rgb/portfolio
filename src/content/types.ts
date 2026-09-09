@@ -138,6 +138,8 @@ export interface Achievement {
   readonly year?: string;
   /** Renders smaller, below the main grid. */
   readonly minor?: boolean;
+  /** Pulled out of the grid and rendered as the holographic card. At most one. */
+  readonly featured?: boolean;
 }
 
 export interface Testimonial {
