@@ -1,0 +1,12 @@
+import { chromium } from 'playwright';
+const browser = await chromium.launch({ headless: true });
+const page = await browser.newPage({ viewport: { width: 860, height: 940 } });
+const errs = [];
+page.on('pageerror', (e) => errs.push(String(e).slice(0, 300)));
+await page.goto('http://localhost:3000/drive/texcheck', { waitUntil: 'networkidle', timeout: 180000 });
+await page.waitForTimeout(4000);
+console.log('build ms:', await page.locator('#ms').textContent());
+console.log('images rendered:', await page.locator('img').count());
+console.log('errors:', errs.slice(0, 3));
+await page.locator('#texcheck').screenshot({ path: process.argv[2] + '/textures.png' });
+await browser.close();

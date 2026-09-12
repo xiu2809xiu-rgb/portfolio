@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import { SPAWN } from '@/content/drive-world';
 import { Car, FIXED_DT, type CarHandle } from './Car';
 import { FollowCamera } from './FollowCamera';
+import { Post } from './Post';
 import { Sky } from './Sky';
 import { World } from './World';
 import { Zones, type ZoneState } from './Zones';
@@ -85,10 +86,36 @@ export function DriveScene({
         cannot tell "rendered black" from "rendered nothing". It costs a buffer
         copy per frame, which is why it is not on for visitors.
       */
-      gl={{ antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: shot }}
+      /*
+        `antialias` is off deliberately. With a composer mounted the scene is
+        drawn into an offscreen buffer and only the final quad reaches the
+        default framebuffer, so MSAA on that framebuffer costs memory and
+        antialiases nothing.
+      */
+      gl={{ antialias: false, powerPreference: 'high-performance', preserveDrawingBuffer: shot }}
       onCreated={(state) => {
-        state.scene.background = new THREE.Color('#0a0f16');
-        state.scene.fog = new THREE.Fog('#0a0f16', 60, 220);
+        /*
+          No background colour: the sky is a dome now. A clear colour is painted
+          by a path that skips tone mapping, so it would sit at a different
+          exposure from the entire rest of the world — which is exactly the
+          "bright blue sky over black ground" this world had.
+        */
+        state.scene.background = null;
+        /*
+          Exponential, not linear. Linear fog has a visible start distance where
+          haze switches on; exponential thickens from the camera outward the way
+          air actually does, and it is what makes a 160m world feel open.
+        */
+        state.scene.fog = new THREE.FogExp2('#a9c7e2', 0.006);
+
+        /*
+          VSM, because PCFSoft no longer exists in practice: three 0.185
+          deprecates it and silently substitutes hard PCF, which is why the
+          shadows were stamped-out black shapes. VSM is the only remaining type
+          that honours `shadow.radius`.
+        */
+        state.gl.shadowMap.type = THREE.VSMShadowMap;
+
         publish(state);
       }}
     >
@@ -107,6 +134,7 @@ export function DriveScene({
 
       <Zones handle={handle} zoneRef={zoneRef} input={input} />
       <FollowCamera handle={handle} />
+      <Post shot={shot} />
     </Canvas>
   );
 }

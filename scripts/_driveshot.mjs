@@ -49,7 +49,7 @@ for (let i = 0; i < 90; i += 1) {
     const t = window.__three;
     if (!t) return false;
     const gl = t.gl.getContext();
-    return !gl.isContextLost() && t.gl.info.render.calls > 0;
+    return !gl.isContextLost() && (t.gl.info.render.calls > 0 || !!t.composer);
   });
   if (alive) break;
 }
@@ -68,7 +68,10 @@ const frames = await page.evaluate((views) => {
       t.camera.position.set(pos[0], pos[1], pos[2]);
       t.camera.lookAt(look[0], look[1], look[2]);
       t.camera.updateMatrixWorld();
-      t.gl.render(t.scene, t.camera);
+      /* Through the composer when there is one — otherwise the capture would
+         miss bloom and the tone curve, i.e. most of what is being checked. */
+      if (t.composer) t.composer.render(0);
+      else t.gl.render(t.scene, t.camera);
       out.push({ name, url: t.gl.domElement.toDataURL('image/png'), lost: t.gl.getContext().isContextLost() });
     } catch (e) {
       out.push({ name, err: String(e).slice(0, 120) });

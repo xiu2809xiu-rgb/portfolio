@@ -19,6 +19,7 @@ import {
   spurBearings,
   type District,
 } from '@/content/drive-world';
+import { grassMaps, tarmacMaps } from './textures';
 import type { DayNight } from './useDayNight';
 
 /**
@@ -57,24 +58,44 @@ export function World({ clock }: { clock: React.RefObject<DayNight> }) {
   );
 }
 
-/** Grass everywhere, with the tarmac laid on top of it. */
+/**
+ * Grass everywhere, with the tarmac laid on top of it.
+ *
+ * The albedo used to be #16301c, which is 2.4% linear reflectance — darker than
+ * coal, and about a tenth of what real grass returns. That, and not the lighting,
+ * is why sunlit ground was resolving to near-black under a bright sky. The
+ * texture carries the colour now, so the material tint stays white and lets it
+ * through unchanged.
+ */
 function Terrain() {
+  const maps = useMemo(() => grassMaps(), []);
   return (
     <RigidBody type="fixed" friction={1.1} restitution={0.02} name="ground">
       <CuboidCollider args={[HALF, 0.5, HALF]} position={[0, -0.5, 0]} />
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[HALF * 2, HALF * 2]} />
-        <meshStandardMaterial color="#16301c" roughness={0.98} />
+        <meshStandardMaterial
+          map={maps.map}
+          normalMap={maps.normalMap}
+          roughnessMap={maps.roughnessMap}
+          normalScale={NORMAL_SCALE}
+          roughness={1}
+          metalness={0}
+        />
       </mesh>
     </RigidBody>
   );
 }
+
+/** Shared so every surface gets the same normal strength without reallocating. */
+const NORMAL_SCALE = new THREE.Vector2(0.85, 0.85);
 
 /**
  * The road network: a plaza, a ring, four radial spurs, and an access road into
  * each district. Drawn slightly proud of the grass so it never z-fights.
  */
 function Roads() {
+  const tarmac = useMemo(() => tarmacMaps(), []);
   const spurs = useMemo(
     () =>
       spurBearings.map((bearing) => {
@@ -111,13 +132,13 @@ function Roads() {
       {/* Plaza */}
       <mesh position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <circleGeometry args={[PLAZA_RADIUS, 64]} />
-        <meshStandardMaterial color="#22262c" roughness={0.85} />
+        <Tarmac maps={tarmac} />
       </mesh>
 
       {/* Ring road */}
       <mesh position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <ringGeometry args={[RING_RADIUS - ROAD_WIDTH / 2, RING_RADIUS + ROAD_WIDTH / 2, 96]} />
-        <meshStandardMaterial color="#22262c" roughness={0.85} />
+        <Tarmac maps={tarmac} />
       </mesh>
       {/* Centre line, dashed by using a thin ring of segments */}
       <mesh position={[0, 0.03, 0]} rotation={[-Math.PI / 2, 0, 0]}>
@@ -133,7 +154,7 @@ function Roads() {
           receiveShadow
         >
           <planeGeometry args={[SPUR_WIDTH, strip.length]} />
-          <meshStandardMaterial color="#22262c" roughness={0.85} />
+          <Tarmac maps={tarmac} />
         </mesh>
       ))}
 
@@ -143,6 +164,20 @@ function Roads() {
         <meshStandardMaterial color="#b4ff39" emissive="#b4ff39" emissiveIntensity={0.4} />
       </mesh>
     </group>
+  );
+}
+
+/** One material description, reused by every piece of road surface. */
+function Tarmac({ maps }: { maps: ReturnType<typeof tarmacMaps> }) {
+  return (
+    <meshStandardMaterial
+      map={maps.map}
+      normalMap={maps.normalMap}
+      roughnessMap={maps.roughnessMap}
+      normalScale={NORMAL_SCALE}
+      roughness={1}
+      metalness={0}
+    />
   );
 }
 
@@ -202,7 +237,7 @@ function DistrictBlock({
       {/* Cleared apron, so the district reads as built-up ground. */}
       <mesh position={[cx, 0.015, cz]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <circleGeometry args={[district.radius, 48]} />
-        <meshStandardMaterial color="#1c2128" roughness={0.9} />
+        <meshStandardMaterial color="#6f7379" roughness={0.92} metalness={0} />
       </mesh>
 
       <RigidBody type="fixed" name={`district-${district.id}`}>
