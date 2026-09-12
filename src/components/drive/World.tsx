@@ -18,6 +18,7 @@ import {
   type District,
 } from '@/content/drive-world';
 import { grassMaps, tarmacMaps } from './textures';
+import { PlazaLetters } from './PlazaLetters';
 import { Trees } from './Trees';
 import type { DayNight } from './useDayNight';
 
@@ -177,24 +178,6 @@ function Tarmac({ maps }: { maps: ReturnType<typeof tarmacMaps> }) {
       roughness={1}
       metalness={0}
     />
-  );
-}
-
-/** W O R K, standing in the plaza where the car spawns. */
-function PlazaLetters() {
-  const letters = ['W', 'O', 'R', 'K'];
-  return (
-    <RigidBody type="fixed" name="letters">
-      {letters.map((letter, i) => (
-        <group key={letter} position={[(i - 1.5) * 5.4, 0, PLAZA_RADIUS - 4]}>
-          <CuboidCollider args={[1.9, 2.2, 0.5]} position={[0, 2.2, 0]} />
-          <mesh position={[0, 2.2, 0]} castShadow receiveShadow>
-            <boxGeometry args={[3.8, 4.4, 1]} />
-            <meshStandardMaterial color="#b4ff39" emissive="#b4ff39" emissiveIntensity={0.2} />
-          </mesh>
-        </group>
-      ))}
-    </RigidBody>
   );
 }
 
