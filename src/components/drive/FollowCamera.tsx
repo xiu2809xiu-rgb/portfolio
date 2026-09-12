@@ -3,7 +3,7 @@
 import { useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
-import type { CarHandle } from './Car';
+import { liveBody, type CarHandle } from './Car';
 
 const BEHIND = 8.5;
 const HEIGHT = 3.6;
@@ -27,7 +27,7 @@ export function FollowCamera({ handle }: { handle: React.RefObject<CarHandle> })
   const lookAt = useRef(new THREE.Vector3());
 
   useFrame((_, delta) => {
-    const body = handle.current?.body;
+    const body = liveBody(handle);
     if (!body) return;
 
     const t = body.translation();

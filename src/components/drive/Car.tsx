@@ -76,6 +76,25 @@ export interface CarHandle {
   grounded: number;
 }
 
+/**
+ * The car's body, but only while Rapier still owns it.
+ *
+ * The handle outlives the scene: it belongs to the page, so that the HUD — which
+ * lives outside the canvas — can read the speed. When the scene is rebuilt, the
+ * old rigid body is freed on the Rust side while the handle still points at it,
+ * and a freed body is indistinguishable from a live one from JavaScript. Calling
+ * anything on it traps in wasm as "null pointer passed to rust", which is what
+ * put a runtime error over the page after a restart.
+ *
+ * `isValid()` is the only way to ask from this side, so every reader goes
+ * through here rather than touching `handle.current.body` directly.
+ */
+export function liveBody(handle: React.RefObject<CarHandle> | undefined): RapierRigidBody | null {
+  const body = handle?.current?.body;
+  if (!body) return null;
+  return body.isValid() ? body : null;
+}
+
 interface CarProps {
   input: DriveInputRef;
   spawn?: [number, number, number];
@@ -107,6 +126,23 @@ const v = {
 export function Car({ input, spawn = [0, 1, 0], handle, clock, vehicleId }: CarProps) {
   const vehicle: Vehicle = vehicleById(vehicleId);
   const bodyRef = useRef<RapierRigidBody>(null);
+
+  /*
+    Whoever creates the body owns its lifetime in the handle. Without this the
+    handle keeps pointing at a freed body after an unmount, and the next reader
+    to run — the chase camera or the zone check — traps in wasm before the
+    replacement car has written itself in.
+  */
+  useEffect(
+    () => () => {
+      if (handle.current) {
+        handle.current.body = null;
+        handle.current.speedKph = 0;
+        handle.current.grounded = 0;
+      }
+    },
+    [handle],
+  );
   const wheelRefs = useRef<(THREE.Object3D | null)[]>([]);
   const { world, rapier } = useRapier();
 

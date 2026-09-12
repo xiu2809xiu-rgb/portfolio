@@ -4,7 +4,7 @@ import { useRef } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { districtGate, districts, type District } from '@/content/drive-world';
-import type { CarHandle } from './Car';
+import { liveBody, type CarHandle } from './Car';
 import type { DriveInputRef } from './useDriveControls';
 
 export interface ZoneState {
@@ -109,7 +109,7 @@ export function Zones({
   */
   /* eslint-disable react-hooks/immutability */
   useFrame(() => {
-    const body = handle.current?.body;
+    const body = liveBody(handle);
     const zone = zoneRef.current;
     if (!body || !zone) return;
 
