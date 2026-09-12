@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
-import { Menu, X } from 'lucide-react';
+import { Car, Menu, X } from 'lucide-react';
 import { primaryNav } from '@/content/navigation';
 import { profile } from '@/content/profile';
 import { useAudio } from './AudioProvider';
@@ -163,6 +163,28 @@ export function SiteHeader({ commandPalette }: { commandPalette?: ReactNode }) {
           <div className="flex items-center gap-2">
             {commandPalette}
 
+            {/*
+              The driving world's main entrance.
+
+              In the actions cluster, not the content nav: Work/Blog/Uses are
+              claims about the person, and putting a driving game among them
+              changes what the site says it is. Here it reads as a thing you can
+              do — which is what it is — and it is on every page rather than
+              buried at the bottom of one.
+            */}
+            <Link
+              href="/drive"
+              className={cn(
+                'group hidden items-center gap-2 rounded-full border px-4 py-2 font-mono text-xs uppercase tracking-widest transition-all md:inline-flex',
+                pathname === '/drive'
+                  ? 'border-aqua/50 bg-aqua/10 text-aqua'
+                  : 'border-hairline text-muted-foreground hover:border-aqua/40 hover:bg-aqua/5 hover:text-foreground',
+              )}
+            >
+              <Car className="size-3.5 transition-transform group-hover:-translate-y-px" />
+              Drive
+            </Link>
+
             <Link
               href="/book"
               className={cn(
@@ -218,8 +240,23 @@ export function SiteHeader({ commandPalette }: { commandPalette?: ReactNode }) {
         </ul>
 
         <Link
+          href="/drive"
+          className="mt-6 flex items-center justify-between gap-4 rounded-2xl border border-aqua/25 bg-aqua/5 px-5 py-4 transition-colors hover:border-aqua/50"
+        >
+          <span>
+            <span className="block font-heading text-lg font-semibold tracking-tight">
+              Take the car out
+            </span>
+            <span className="mt-0.5 block font-mono text-[0.6rem] uppercase tracking-[0.18em] text-muted-foreground">
+              A drivable world · loads only if you ask
+            </span>
+          </span>
+          <Car className="size-5 shrink-0 text-aqua" />
+        </Link>
+
+        <Link
           href="/book"
-          className="mt-8 flex items-center justify-center gap-2 rounded-full bg-lime px-6 py-4 font-mono text-sm uppercase tracking-widest text-black"
+          className="mt-3 flex items-center justify-center gap-2 rounded-full bg-lime px-6 py-4 font-mono text-sm uppercase tracking-widest text-black"
         >
           Book a session
         </Link>

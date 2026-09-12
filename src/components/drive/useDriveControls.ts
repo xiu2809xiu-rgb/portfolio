@@ -10,12 +10,13 @@ export interface DriveInput {
   brake: boolean;
   reset: boolean;
   interact: boolean;
+  horn: boolean;
 }
 
 /** Shared mutable input, written by keyboard and touch alike. */
 export type DriveInputRef = { current: DriveInput };
 
-const KEYS: Record<string, keyof typeof AXES | 'brake' | 'reset' | 'interact'> = {
+const KEYS: Record<string, keyof typeof AXES | 'brake' | 'reset' | 'interact' | 'horn'> = {
   KeyW: 'forward',
   ArrowUp: 'forward',
   KeyS: 'back',
@@ -27,6 +28,7 @@ const KEYS: Record<string, keyof typeof AXES | 'brake' | 'reset' | 'interact'> =
   Space: 'brake',
   KeyR: 'reset',
   KeyE: 'interact',
+  KeyH: 'horn',
 };
 
 const AXES = { forward: 0, back: 0, left: 0, right: 0 };
@@ -50,6 +52,7 @@ export function useDriveControls(): DriveInputRef {
     brake: false,
     reset: false,
     interact: false,
+    horn: false,
   });
 
   useEffect(() => {
@@ -66,6 +69,7 @@ export function useDriveControls(): DriveInputRef {
       if (action === 'brake') input.current.brake = down;
       else if (action === 'reset') input.current.reset = down;
       else if (action === 'interact') input.current.interact = down;
+      else if (action === 'horn') input.current.horn = down;
       else held[action] = down ? 1 : 0;
     };
 
@@ -78,6 +82,7 @@ export function useDriveControls(): DriveInputRef {
         held[key as keyof typeof AXES] = 0;
       });
       input.current.brake = false;
+      input.current.horn = false;
     };
 
     const tick = () => {

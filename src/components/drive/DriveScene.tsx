@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Canvas } from '@react-three/fiber';
+import { Canvas, useFrame } from '@react-three/fiber';
 import { Physics } from '@react-three/rapier';
 import * as THREE from 'three';
 import { SPAWN } from '@/content/drive-world';
@@ -12,7 +12,8 @@ import { Sky } from './Sky';
 import { World } from './World';
 import { Zones, type ZoneState } from './Zones';
 import { useDayNight, type DayNight } from './useDayNight';
-import { useDriveControls } from './useDriveControls';
+import { useDriveControls, type DriveInputRef } from './useDriveControls';
+import type { EngineAudio } from './engine-audio';
 
 /**
  * The drivable world.
@@ -28,6 +29,8 @@ export function DriveScene({
   clockRef,
   zoneRef,
   onClock,
+  vehicleId,
+  audio,
 }: {
   handle: React.RefObject<CarHandle>;
   /* Owned by the client wrapper so the HTML HUD can read them; the HUD lives
@@ -35,6 +38,10 @@ export function DriveScene({
   clockRef: React.RefObject<DayNight>;
   zoneRef: React.RefObject<ZoneState>;
   onClock?: (label: string, daylight: number) => void;
+  /** Appearance only — every body shares one suspension model. */
+  vehicleId?: string;
+  /** Null until the visitor starts the engine; audio needs a user gesture. */
+  audio?: EngineAudio | null;
 }) {
   const input = useDriveControls();
   const { colours, advance } = useDayNight(clockRef);
@@ -129,12 +136,38 @@ export function DriveScene({
       */}
       <Physics timeStep={FIXED_DT} debug={debug} gravity={[0, -9.81, 0]}>
         <World clock={clockRef} />
-        <Car input={input} spawn={SPAWN} handle={handle} clock={clockRef} />
+        <Car input={input} spawn={SPAWN} handle={handle} clock={clockRef} vehicleId={vehicleId} />
       </Physics>
 
       <Zones handle={handle} zoneRef={zoneRef} input={input} />
+      <EngineSound audio={audio} handle={handle} input={input} />
       <FollowCamera handle={handle} />
       <Post shot={shot} />
     </Canvas>
   );
+}
+
+/**
+ * Feeds the synthesiser from the car, once per frame.
+ *
+ * Inside the canvas because that is where the input ref and the car handle both
+ * live, and because `useFrame` is already the clock everything else here runs
+ * on — a second requestAnimationFrame loop for audio would drift against it.
+ */
+function EngineSound({
+  audio,
+  handle,
+  input,
+}: {
+  audio?: EngineAudio | null;
+  handle: React.RefObject<CarHandle>;
+  input: DriveInputRef;
+}) {
+  useFrame(() => {
+    if (!audio) return;
+    const car = handle.current;
+    audio.update(car?.speedKph ?? 0, input.current.throttle, (car?.grounded ?? 0) === 0);
+    audio.horn(input.current.horn);
+  });
+  return null;
 }

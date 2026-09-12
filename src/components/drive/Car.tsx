@@ -10,6 +10,7 @@ import {
   useRapier,
   type RapierRigidBody,
 } from '@react-three/rapier';
+import { vehicleById, type Vehicle } from '@/content/drive-vehicles';
 import type { DriveInputRef } from './useDriveControls';
 import type { DayNight } from './useDayNight';
 
@@ -81,6 +82,8 @@ interface CarProps {
   handle: React.RefObject<CarHandle>;
   /** Drives the headlights, which come on as the sun goes down. */
   clock?: React.RefObject<DayNight>;
+  /** Appearance only. Every body style shares one suspension model. */
+  vehicleId?: string;
 }
 
 /** Scratch vectors. Allocating inside a 60Hz loop is how you invite the GC in. */
@@ -101,7 +104,8 @@ const v = {
   impulse: new THREE.Vector3(),
 };
 
-export function Car({ input, spawn = [0, 1, 0], handle, clock }: CarProps) {
+export function Car({ input, spawn = [0, 1, 0], handle, clock, vehicleId }: CarProps) {
+  const vehicle: Vehicle = vehicleById(vehicleId);
   const bodyRef = useRef<RapierRigidBody>(null);
   const wheelRefs = useRef<(THREE.Object3D | null)[]>([]);
   const { world, rapier } = useRapier();
@@ -385,7 +389,7 @@ export function Car({ input, spawn = [0, 1, 0], handle, clock }: CarProps) {
         restitution={0.05}
       />
 
-      <CarBody clock={clock} />
+      <CarBody clock={clock} vehicle={vehicle} input={input} />
 
       {[0, 1, 2, 3].map((i) => (
         <group
@@ -394,7 +398,7 @@ export function Car({ input, spawn = [0, 1, 0], handle, clock }: CarProps) {
             wheelRefs.current[i] = node;
           }}
         >
-          <Wheel />
+          <Wheel rim={vehicle.rim} />
         </group>
       ))}
     </RigidBody>
@@ -409,25 +413,41 @@ function respawn(body: RapierRigidBody, spawn: [number, number, number]) {
 }
 
 /**
- * The shell, built from primitives.
+ * The shell.
  *
- * There is no low-poly vehicle in this project to load, and a downloaded one
- * costs a megabyte and a licence to honour. Six boxes in the site's palette read
- * as a car at this camera distance and cost nothing.
+ * Built from primitives and driven entirely by a `Vehicle` record, so adding a
+ * body style is a data change rather than a component. Nothing in here reaches
+ * the suspension: the collider, the wheel mounts and the spring rates are the
+ * same whichever body is on top, which is why the picker can promise they all
+ * drive identically and mean it.
+ *
+ * The hull is deliberately larger than the physics chassis and extends below
+ * it. The suspension holds the collider about half a metre clear of the road at
+ * rest, so a body that stopped at the collider's own underside left the car
+ * visibly hovering with daylight under the sills.
  */
-function CarBody({ clock }: { clock?: React.RefObject<DayNight> }) {
-  const { halfWidth: w, halfHeight: h, halfLength: l } = CHASSIS;
+function CarBody({
+  clock,
+  vehicle,
+  input,
+}: {
+  clock?: React.RefObject<DayNight>;
+  vehicle: Vehicle;
+  input: DriveInputRef;
+}) {
+  const { halfLength: l } = CHASSIS;
   const beams = useRef<THREE.SpotLight[]>([]);
   const lenses = useRef<THREE.MeshStandardMaterial[]>([]);
   const aims = useRef<THREE.Object3D[]>([]);
+  const brakeLamps = useRef<THREE.MeshStandardMaterial[]>([]);
+  const reverseLamps = useRef<THREE.MeshStandardMaterial[]>([]);
 
   /*
     A SpotLight aims at its `target`, which is a separate object three.js expects
     to find in the scene — and `target-position` sets that object's position in
     WORLD space. Left like that the beam pointed at a fixed patch of ground and
-    stayed there while the car drove away from it, which is exactly what the
-    screenshot showed. Parenting each target inside the car group and assigning it
-    here means the beam turns with the car, including as it pitches over a ramp.
+    stayed there while the car drove away from it. Parenting each target inside
+    the car group and assigning it here means the beam turns with the car.
   */
   useEffect(() => {
     beams.current.forEach((beam, i) => {
@@ -459,35 +479,129 @@ function CarBody({ clock }: { clock?: React.RefObject<DayNight> }) {
     for (const lens of lenses.current) {
       if (lens) lens.emissiveIntensity = 0.4 + dark * 3.2;
     }
+
+    /* Tail lamps carry information rather than being a constant red rectangle:
+       bright under braking, and a white lamp when the throttle is in reverse. */
+    const control = input.current;
+    const braking = control.brake || control.throttle < -0.05;
+    for (const lamp of brakeLamps.current) {
+      if (lamp) lamp.emissiveIntensity = braking ? 5.2 : 0.7 + dark * 1.4;
+    }
+    for (const lamp of reverseLamps.current) {
+      if (lamp) lamp.emissiveIntensity = control.throttle < -0.05 ? 4 : 0.04;
+    }
   });
   /* eslint-enable react-hooks/immutability */
+
+  const { hull, cabin, bed } = vehicle;
+  /* Lamps sit at the hull's own corners, so they move with the body style. */
+  const lampX = hull.w * 0.58;
+
   return (
     <group>
-      <mesh castShadow receiveShadow>
-        <boxGeometry args={[w * 2, h * 2, l * 2]} />
-        <meshStandardMaterial color="#b4ff39" metalness={0.15} roughness={0.42} />
-      </mesh>
-
-      <mesh position={[0, h + 0.2, -0.24]} castShadow>
-        <boxGeometry args={[w * 1.62, 0.46, l * 0.98]} />
-        <meshStandardMaterial color="#0b0e13" metalness={0.3} roughness={0.35} />
-      </mesh>
-
-      <mesh position={[0, h + 0.24, 0.36]}>
-        <boxGeometry args={[w * 1.5, 0.28, 0.06]} />
-        <meshStandardMaterial
-          color="#39ffd8"
-          emissive="#39ffd8"
-          emissiveIntensity={0.5}
-          metalness={0.6}
-          roughness={0.1}
+      {/* Hull */}
+      <mesh position={[0, hull.y, hull.z]} castShadow receiveShadow>
+        <boxGeometry args={[hull.w * 2, hull.h * 2, hull.l * 2]} />
+        <meshPhysicalMaterial
+          color={vehicle.paint}
+          metalness={0.35}
+          roughness={0.32}
+          /* Car paint is a pigment coat under a clear lacquer, and that second
+             specular lobe is most of why a car reads as a car rather than as a
+             painted box. Confirmed present on MeshPhysicalMaterial at 0.185. */
+          clearcoat={0.85}
+          clearcoatRoughness={0.12}
         />
       </mesh>
 
-      {[-0.46, 0.46].map((x) => (
+      {/* Wheel arches, so the tyres do not appear to pass through the sills. */}
+      {[
+        [WHEEL.halfTrack, WHEEL.front],
+        [-WHEEL.halfTrack, WHEEL.front],
+        [WHEEL.halfTrack, WHEEL.back],
+        [-WHEEL.halfTrack, WHEEL.back],
+      ].map(([x, z]) => (
+        <mesh key={`arch-${x}-${z}`} position={[x * 0.86, hull.y - 0.02, z]} castShadow>
+          <boxGeometry args={[0.34, hull.h * 1.5, 0.98]} />
+          <meshPhysicalMaterial
+            color={vehicle.paint}
+            metalness={0.3}
+            roughness={0.38}
+            clearcoat={0.7}
+          />
+        </mesh>
+      ))}
+
+      {/* Greenhouse, or a low screen on an open car. */}
+      {cabin ? (
+        <>
+          <mesh position={[0, cabin.y, cabin.z]} castShadow receiveShadow>
+            <boxGeometry args={[cabin.w * 2, cabin.h * 2, cabin.l * 2]} />
+            <meshStandardMaterial color={vehicle.glass} metalness={0.4} roughness={0.18} />
+          </mesh>
+          {vehicle.roofBars
+            ? [-cabin.w * 0.6, cabin.w * 0.6].map((x) => (
+                <mesh
+                  key={`bar-${x}`}
+                  position={[x, cabin.y + cabin.h + 0.05, cabin.z]}
+                  castShadow
+                >
+                  <boxGeometry args={[0.07, 0.07, cabin.l * 1.7]} />
+                  <meshStandardMaterial color={vehicle.trim} metalness={0.7} roughness={0.35} />
+                </mesh>
+              ))
+            : null}
+        </>
+      ) : (
+        <mesh position={[0, hull.y + hull.h + 0.18, 0.35]} castShadow>
+          <boxGeometry args={[hull.w * 1.3, 0.36, 0.05]} />
+          <meshPhysicalMaterial
+            color={vehicle.glass}
+            metalness={0.1}
+            roughness={0.05}
+            transparent
+            opacity={0.55}
+          />
+        </mesh>
+      )}
+
+      {/* Load bed. */}
+      {bed ? (
+        <>
+          <mesh position={[0, bed.y - bed.h, bed.z]} castShadow receiveShadow>
+            <boxGeometry args={[bed.w * 2, 0.08, bed.l * 2]} />
+            <meshStandardMaterial color={vehicle.trim} roughness={0.75} />
+          </mesh>
+          {[
+            [bed.w, 0, 0.1, bed.l * 2],
+            [-bed.w, 0, 0.1, bed.l * 2],
+            [0, -bed.l, bed.w * 2, 0.1],
+          ].map((wall, i) => (
+            <mesh key={`bedwall-${i}`} position={[wall[0], bed.y, bed.z + wall[1]]} castShadow>
+              <boxGeometry args={[wall[2] || 0.1, bed.h * 2, wall[3] || 0.1]} />
+              <meshPhysicalMaterial color={vehicle.paint} metalness={0.3} roughness={0.4} />
+            </mesh>
+          ))}
+        </>
+      ) : null}
+
+      {/* Trim strip across the nose. */}
+      <mesh position={[0, hull.y + hull.h * 0.45, hull.l - 0.02]}>
+        <boxGeometry args={[hull.w * 1.5, 0.12, 0.06]} />
+        <meshStandardMaterial
+          color={vehicle.trim}
+          emissive={vehicle.trim}
+          emissiveIntensity={0.35}
+          metalness={0.6}
+          roughness={0.12}
+        />
+      </mesh>
+
+      {/* Headlights */}
+      {[-lampX, lampX].map((x) => (
         <group key={`head-${x}`}>
-          <mesh position={[x, 0.02, l]}>
-            <boxGeometry args={[0.28, 0.15, 0.08]} />
+          <mesh position={[x, hull.y + hull.h * 0.35, l]}>
+            <boxGeometry args={[0.3, 0.16, 0.08]} />
             <meshStandardMaterial
               ref={(material) => {
                 if (material) lenses.current.push(material);
@@ -508,7 +622,7 @@ function CarBody({ clock }: { clock?: React.RefObject<DayNight> }) {
             ref={(light) => {
               if (light) beams.current.push(light);
             }}
-            position={[x, 0.06, l]}
+            position={[x, hull.y + hull.h * 0.35, l]}
             angle={0.5}
             penumbra={0.6}
             distance={34}
@@ -519,21 +633,67 @@ function CarBody({ clock }: { clock?: React.RefObject<DayNight> }) {
         </group>
       ))}
 
-      {[-0.46, 0.46].map((x) => (
-        <mesh key={`tail-${x}`} position={[x, 0.06, -l]}>
-          <boxGeometry args={[0.26, 0.13, 0.08]} />
-          <meshStandardMaterial color="#ff3b3b" emissive="#ff3b3b" emissiveIntensity={1.6} />
+      {/* Tail lamps: brake outboard, reverse inboard. */}
+      {[-lampX, lampX].map((x) => (
+        <group key={`tail-${x}`}>
+          <mesh position={[x, hull.y + hull.h * 0.4, -l]}>
+            <boxGeometry args={[0.22, 0.14, 0.07]} />
+            <meshStandardMaterial
+              ref={(material) => {
+                if (material) brakeLamps.current.push(material);
+              }}
+              color="#ff3b3b"
+              emissive="#ff2a2a"
+              emissiveIntensity={0.7}
+              toneMapped={false}
+            />
+          </mesh>
+          <mesh position={[x * 0.52, hull.y + hull.h * 0.4, -l]}>
+            <boxGeometry args={[0.12, 0.1, 0.07]} />
+            <meshStandardMaterial
+              ref={(material) => {
+                if (material) reverseLamps.current.push(material);
+              }}
+              color="#f4f8ff"
+              emissive="#ffffff"
+              emissiveIntensity={0.04}
+              toneMapped={false}
+            />
+          </mesh>
+        </group>
+      ))}
+    </group>
+  );
+}
+
+/**
+ * Tyre plus rim.
+ *
+ * The rim is not decoration. A plain cylinder is rotationally symmetric, so a
+ * wheel spinning at 40kph looks exactly like a wheel standing still — the spin
+ * animation was always correct and simply had nothing to show. Spokes are the
+ * honest way to break that symmetry.
+ */
+function Wheel({ rim }: { rim: string }) {
+  return (
+    <group rotation={[0, 0, Math.PI / 2]}>
+      <mesh castShadow>
+        <cylinderGeometry args={[WHEEL.radius, WHEEL.radius, 0.3, 18]} />
+        <meshStandardMaterial color="#15181e" roughness={0.85} />
+      </mesh>
+      {[-0.151, 0.151].map((y) => (
+        <mesh key={y} position={[0, y, 0]}>
+          <cylinderGeometry args={[WHEEL.radius * 0.62, WHEEL.radius * 0.62, 0.02, 14]} />
+          <meshStandardMaterial color={rim} metalness={0.8} roughness={0.3} />
+        </mesh>
+      ))}
+      {[0, 1, 2, 3, 4].map((i) => (
+        <mesh key={`spoke-${i}`} rotation={[0, 0, (i / 5) * Math.PI * 2]}>
+          <boxGeometry args={[WHEEL.radius * 1.1, 0.07, 0.312]} />
+          <meshStandardMaterial color={rim} metalness={0.75} roughness={0.35} />
         </mesh>
       ))}
     </group>
   );
 }
 
-function Wheel() {
-  return (
-    <mesh rotation={[0, 0, Math.PI / 2]} castShadow>
-      <cylinderGeometry args={[WHEEL.radius, WHEEL.radius, 0.3, 18]} />
-      <meshStandardMaterial color="#15181e" roughness={0.85} />
-    </mesh>
-  );
-}
