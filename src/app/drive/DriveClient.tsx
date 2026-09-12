@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { CarHandle } from '@/components/drive/Car';
-import type { ZoneState } from '@/components/drive/Zones';
+import { makeZoneState, type ZoneState } from '@/components/drive/Zones';
 import { makeClock, type DayNight } from '@/components/drive/useDayNight';
 import { EngineAudio } from '@/components/drive/engine-audio';
 import { Hud } from '@/components/drive/Hud';
@@ -36,7 +36,7 @@ export function DriveClient() {
     tree — and with it the canvas — many times a second.
   */
   const clockRef = useRef<DayNight>(makeClock());
-  const zoneRef = useRef<ZoneState>({ active: null, version: 0 });
+  const zoneRef = useRef<ZoneState>(makeZoneState());
   const [audio, setAudio] = useState<EngineAudio | null>(null);
   /* Mirrors `audio` so teardown does not have to depend on it — see below. */
   const audioRef = useRef<EngineAudio | null>(null);

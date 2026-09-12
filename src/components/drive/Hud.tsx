@@ -2,23 +2,26 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import type { District } from '@/content/drive-world';
+import { Navigation } from 'lucide-react';
+import { districts, type District } from '@/content/drive-world';
 import type { CarHandle } from './Car';
 import type { ZoneState } from './Zones';
 import { clockLabel, DAY_LENGTH_SECONDS, START_AT, type DayNight } from './useDayNight';
 import { cn } from '@/lib/utils';
 
 /**
- * Speed, time of day, the controls card, and the panel that names whichever
- * chapter the car is standing in front of.
+ * Speed, time of day, the compass, the controls card, and the panel that names
+ * whichever chapter the car is standing in front of.
  *
  * Continuous values are written straight into DOM nodes on each frame rather
  * than held in React state — at 60Hz, state would re-render this subtree sixty
  * times a second to change two digits and a clock, which would be the most
  * expensive thing on the page and spent on the least important part of it.
  *
- * The district panel is the exception, and deliberately so: it changes a few
- * times a minute, carries real content, and is worth a render when it does.
+ * The district panel and the compass heading are the exceptions, and
+ * deliberately so: they change a few times a minute, carry real content, and are
+ * worth a render when they do. The compass *needle* is not — it moves every
+ * frame, so it is a transform written to a node.
  */
 export function Hud({
   handle,
@@ -32,8 +35,12 @@ export function Hud({
   const speedRef = useRef<HTMLSpanElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
   const clockTextRef = useRef<HTMLSpanElement>(null);
+  const needleRef = useRef<HTMLSpanElement>(null);
+  const distanceRef = useRef<HTMLSpanElement>(null);
   const [showKeys, setShowKeys] = useState(true);
   const [zone, setZone] = useState<District | null>(null);
+  const [target, setTarget] = useState<District | null>(districts[0]);
+  const [done, setDone] = useState(0);
   const [scrubbing, setScrubbing] = useState(false);
   const seenVersion = useRef(-1);
 
@@ -47,11 +54,22 @@ export function Hud({
         clockTextRef.current.textContent = clockLabel(clockRef.current.t);
       }
 
-      /* Only re-render when the district actually changes. */
       const zoneState = zoneRef.current;
-      if (zoneState && zoneState.version !== seenVersion.current) {
-        seenVersion.current = zoneState.version;
-        setZone(zoneState.active);
+      if (zoneState) {
+        /* The needle every frame; the words only when they change. */
+        if (needleRef.current && zoneState.target) {
+          needleRef.current.style.transform = `rotate(${zoneState.targetHeading}rad)`;
+        }
+        if (distanceRef.current && zoneState.target) {
+          distanceRef.current.textContent = `${Math.round(zoneState.targetDistance)} m`;
+        }
+
+        if (zoneState.version !== seenVersion.current) {
+          seenVersion.current = zoneState.version;
+          setZone(zoneState.active);
+          setTarget(zoneState.target);
+          setDone(zoneState.visited.length);
+        }
       }
 
       frame = requestAnimationFrame(tick);
@@ -67,6 +85,46 @@ export function Hud({
 
   return (
     <>
+      {/* ── Where to go next ── */}
+      <div className="pointer-events-none absolute inset-x-0 top-5 z-20 flex justify-center">
+        <div className="flex items-center gap-4 rounded-2xl border border-white/10 bg-black/50 px-5 py-3 backdrop-blur">
+          {target ? (
+            <>
+              <span
+                ref={needleRef}
+                className="grid size-9 shrink-0 place-items-center rounded-full border border-lime/40 bg-lime/10 text-lime"
+                style={{ transform: 'rotate(0rad)' }}
+              >
+                <Navigation className="size-4 fill-current" />
+              </span>
+              <span className="min-w-0">
+                <span className="block font-mono text-[0.55rem] uppercase tracking-[0.22em] text-white/45">
+                  Next · {done + 1} of {districts.length}
+                </span>
+                <span className="block truncate font-heading text-sm font-bold tracking-tight text-white">
+                  {target.name}
+                </span>
+              </span>
+              <span
+                ref={distanceRef}
+                className="shrink-0 font-mono text-xs tabular-nums text-lime"
+              >
+                0 m
+              </span>
+            </>
+          ) : (
+            <span className="text-center">
+              <span className="block font-mono text-[0.55rem] uppercase tracking-[0.22em] text-lime">
+                All {districts.length} found
+              </span>
+              <span className="mt-0.5 block font-heading text-sm font-bold tracking-tight text-white">
+                That is the whole CV. Drive around as long as you like.
+              </span>
+            </span>
+          )}
+        </div>
+      </div>
+
       {/* ── Speed ── */}
       <div className="pointer-events-none absolute bottom-6 right-6 z-20 text-right">
         <div className="flex items-baseline justify-end gap-1.5">
@@ -173,6 +231,7 @@ export function Hud({
           {[
             ['W A S D', 'Drive'],
             ['Space', 'Handbrake'],
+            ['H', 'Horn'],
             ['E', 'Open a chapter'],
             ['R', 'Reset'],
           ].map(([key, action]) => (

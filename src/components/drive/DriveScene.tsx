@@ -11,6 +11,7 @@ import { Post } from './Post';
 import { Sky } from './Sky';
 import { World } from './World';
 import { Zones, type ZoneState } from './Zones';
+import { Beacon } from './Beacon';
 import { useDayNight, type DayNight } from './useDayNight';
 import { useDriveControls, type DriveInputRef } from './useDriveControls';
 import type { EngineAudio } from './engine-audio';
@@ -79,6 +80,13 @@ export function DriveScene({
     (window as unknown as { __three?: unknown }).__three = state;
   };
 
+  /* The harness needs to see tour state to assert on it; refs are invisible. */
+  useEffect(() => {
+    if (!shot) return;
+    (window as unknown as { __zone?: unknown; __car?: unknown }).__zone = zoneRef;
+    (window as unknown as { __zone?: unknown; __car?: unknown }).__car = handle;
+  }, [shot, zoneRef, handle]);
+
   return (
     <Canvas
       shadows
@@ -140,6 +148,7 @@ export function DriveScene({
       </Physics>
 
       <Zones handle={handle} zoneRef={zoneRef} input={input} />
+      <Beacon zoneRef={zoneRef} />
       <EngineSound audio={audio} handle={handle} input={input} />
       <FollowCamera handle={handle} />
       <Post shot={shot} />
