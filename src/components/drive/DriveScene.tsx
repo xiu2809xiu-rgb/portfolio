@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Physics } from '@react-three/rapier';
 import * as THREE from 'three';
 import { SPAWN } from '@/content/drive-world';
@@ -15,6 +15,7 @@ import { Beacon } from './Beacon';
 import { useDayNight, type DayNight } from './useDayNight';
 import { useDriveControls, type DriveInputRef } from './useDriveControls';
 import type { EngineAudio } from './engine-audio';
+import { qualityById, type QualityId } from './quality';
 
 /**
  * The drivable world.
@@ -32,6 +33,8 @@ export function DriveScene({
   onClock,
   vehicleId,
   audio,
+  qualityId,
+  onContextLost,
 }: {
   handle: React.RefObject<CarHandle>;
   /* Owned by the client wrapper so the HTML HUD can read them; the HUD lives
@@ -43,8 +46,12 @@ export function DriveScene({
   vehicleId?: string;
   /** Null until the visitor starts the engine; audio needs a user gesture. */
   audio?: EngineAudio | null;
+  qualityId?: QualityId;
+  /** Called once if the GPU drops the context, so the page can offer a way out. */
+  onContextLost?: () => void;
 }) {
   const input = useDriveControls();
+  const quality = qualityById(qualityId);
   const { colours, advance } = useDayNight(clockRef);
 
   /*
@@ -70,29 +77,39 @@ export function DriveScene({
     () => typeof window !== 'undefined' && new URLSearchParams(location.search).has('shot'),
   );
 
+  /*
+    `?probe` publishes the renderer WITHOUT preserving the drawing buffer.
+    Keeping the buffer alive makes the compositor read it back every frame —
+    a real, measurable GPU stall — so a diagnostic that needs `?shot` cannot
+    tell you anything about how the page performs for an actual visitor.
+  */
+  const [probe] = useState(
+    () => typeof window !== 'undefined' && new URLSearchParams(location.search).has('probe'),
+  );
+
   useEffect(() => {
     if (!debug) return;
     (window as unknown as { __drive?: unknown }).__drive = handle;
   }, [debug, handle]);
 
   const publish = (state: { gl: THREE.WebGLRenderer; scene: THREE.Scene; camera: THREE.Camera }) => {
-    if (!shot) return;
+    if (!shot && !probe) return;
     (window as unknown as { __three?: unknown }).__three = state;
   };
 
   /* The harness needs to see tour state to assert on it; refs are invisible. */
   useEffect(() => {
-    if (!shot) return;
+    if (!shot && !probe) return;
     (window as unknown as { __zone?: unknown; __car?: unknown }).__zone = zoneRef;
     (window as unknown as { __zone?: unknown; __car?: unknown }).__car = handle;
-  }, [shot, zoneRef, handle]);
+  }, [shot, probe, zoneRef, handle]);
 
   return (
     <Canvas
-      shadows
+      shadows={quality.shadows}
       /* Capped: a physics world plus shadows on a 4x-density phone screen is the
          quickest way to turn a toy into a space heater. */
-      dpr={[1, 1.75]}
+      dpr={[1, quality.dpr]}
       camera={{ position: [0, 6, -14], fov: 55, near: 0.1, far: 400 }}
       /*
         `preserveDrawingBuffer` only under ?debug. Without it the drawing buffer
@@ -107,7 +124,7 @@ export function DriveScene({
         default framebuffer, so MSAA on that framebuffer costs memory and
         antialiases nothing.
       */
-      gl={{ antialias: false, powerPreference: 'high-performance', preserveDrawingBuffer: shot }}
+      gl={{ antialias: false, powerPreference: quality.power, preserveDrawingBuffer: shot }}
       onCreated={(state) => {
         /*
           No background colour: the sky is a dome now. A clear colour is painted
@@ -129,12 +146,22 @@ export function DriveScene({
           shadows were stamped-out black shapes. VSM is the only remaining type
           that honours `shadow.radius`.
         */
-        state.gl.shadowMap.type = THREE.VSMShadowMap;
+        state.gl.shadowMap.type = quality.shadowType;
+
+        /*
+          With no composer there is no pass to tone map at the end, so the curve
+          has to go back on the renderer. Same curve either way — dropping the
+          post chain costs bloom, not colour.
+        */
+        if (!quality.post) {
+          state.gl.toneMapping = THREE.NeutralToneMapping;
+          state.gl.toneMappingExposure = 1.15;
+        }
 
         publish(state);
       }}
     >
-      <Sky colours={colours} advance={advance} onTick={onClock} />
+      <Sky colours={colours} advance={advance} onTick={onClock} quality={quality} />
 
       {/*
         Fixed timestep, not "vary". The vehicle integrates its own suspension
@@ -143,7 +170,7 @@ export function DriveScene({
         handling identical on a 60Hz laptop and a 144Hz monitor.
       */}
       <Physics timeStep={FIXED_DT} debug={debug} gravity={[0, -9.81, 0]}>
-        <World clock={clockRef} />
+        <World clock={clockRef} quality={quality} />
         <Car input={input} spawn={SPAWN} handle={handle} clock={clockRef} vehicleId={vehicleId} />
       </Physics>
 
@@ -151,7 +178,8 @@ export function DriveScene({
       <Beacon zoneRef={zoneRef} />
       <EngineSound audio={audio} handle={handle} input={input} />
       <FollowCamera handle={handle} />
-      <Post shot={shot} />
+      {quality.post ? <Post shot={shot || probe} /> : null}
+      <ContextGuard onLost={onContextLost} />
     </Canvas>
   );
 }
@@ -178,5 +206,31 @@ function EngineSound({
     audio.update(car?.speedKph ?? 0, input.current.throttle, (car?.grounded ?? 0) === 0);
     audio.horn(input.current.horn);
   });
+  return null;
+}
+
+/**
+ * Notices when the GPU takes the context away.
+ *
+ * three already calls preventDefault on the lost event, which is what asks the
+ * browser to restore — but a driver that has just run out of resources usually
+ * cannot, and nothing comes back. The canvas then paints blank white and the
+ * HUD carries on over the top of it, which is exactly the state this was
+ * reported in: a white page with a working clock on it.
+ *
+ * There is no rendering trick that recovers from this. The useful thing is to
+ * say so, and offer a way back at a cheaper setting.
+ */
+function ContextGuard({ onLost }: { onLost?: () => void }) {
+  const gl = useThree((state) => state.gl);
+
+  useEffect(() => {
+    if (!onLost) return;
+    const canvas = gl.domElement;
+    const handle = () => onLost();
+    canvas.addEventListener('webglcontextlost', handle);
+    return () => canvas.removeEventListener('webglcontextlost', handle);
+  }, [gl, onLost]);
+
   return null;
 }

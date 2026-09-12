@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 import { HALF } from '@/content/drive-world';
 import { clockLabel, type DayNight } from './useDayNight';
+import type { Quality } from './quality';
 
 /**
  * Sun, sky and fog, all driven from the clock.
@@ -100,11 +101,13 @@ export function Sky({
   colours,
   advance,
   onTick,
+  quality,
 }: {
   colours: { sky: THREE.Color; fog: THREE.Color; sun: THREE.Color; ambient: THREE.Color };
   advance: (delta: number) => DayNight;
   /** Called about twice a second with the clock label, for the HUD. */
   onTick?: (label: string, daylight: number) => void;
+  quality: Quality;
 }) {
   const { scene, camera } = useThree();
   const sunRef = useRef<THREE.DirectionalLight>(null);
@@ -209,7 +212,7 @@ export function Sky({
       <directionalLight
         ref={sunRef}
         castShadow
-        shadow-mapSize={[2048, 2048]}
+        shadow-mapSize={[quality.shadowMapSize, quality.shadowMapSize]}
         /*
           The shadow frustum has to wrap the whole map. Left at its default it
           covers about ten metres, so shadows simply stop existing a short drive
@@ -225,8 +228,8 @@ export function Sky({
         /* Only VSM honours this. PCFSoftShadowMap is deprecated in three 0.185
            and silently downgraded to hard PCF, which is why the shadows read as
            stamped-out black shapes. */
-        shadow-radius={4}
-        shadow-blurSamples={12}
+        shadow-radius={quality.shadowRadius}
+        shadow-blurSamples={quality.shadowBlurSamples}
       />
 
       <hemisphereLight ref={ambientRef} groundColor="#3a4a32" intensity={0.6} />

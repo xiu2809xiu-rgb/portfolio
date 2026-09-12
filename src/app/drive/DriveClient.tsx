@@ -7,9 +7,17 @@ import { makeClock, type DayNight } from '@/components/drive/useDayNight';
 import { EngineAudio } from '@/components/drive/engine-audio';
 import { Hud } from '@/components/drive/Hud';
 import { DEFAULT_VEHICLE, vehicles } from '@/content/drive-vehicles';
+import {
+  QUALITIES,
+  qualityById,
+  setQuality,
+  stepDown,
+  useQuality,
+  type QualityId,
+} from '@/components/drive/quality';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { ArrowLeft, Volume2, VolumeX } from 'lucide-react';
+import { ArrowLeft, TriangleAlert, Volume2, VolumeX } from 'lucide-react';
 import { useStillness } from '@/lib/use-stillness';
 import { cn } from '@/lib/utils';
 
@@ -28,6 +36,10 @@ export function DriveClient() {
   const [started, setStarted] = useState(false);
   const [vehicleId, setVehicleId] = useState<string>(DEFAULT_VEHICLE);
   const [soundOn, setSoundOn] = useState(true);
+  const qualityId = useQuality();
+  const [lost, setLost] = useState(false);
+  /* Bumped to build a fresh Canvas — and with it a fresh GL context. */
+  const [sceneKey, setSceneKey] = useState(0);
   const hostRef = useRef<HTMLDivElement>(null);
   const handle = useRef<CarHandle>({ body: null, speedKph: 0, grounded: 0 });
   /*
@@ -40,6 +52,24 @@ export function DriveClient() {
   const [audio, setAudio] = useState<EngineAudio | null>(null);
   /* Mirrors `audio` so teardown does not have to depend on it — see below. */
   const audioRef = useRef<EngineAudio | null>(null);
+
+  /*
+    A lost context does not come back on its own. The browser only retries if the
+    driver has resources to spare, and one that has just run out generally has
+    not — so the canvas stays blank white with the HUD still ticking over it.
+    Stepping the tier down and offering a restart is the only thing that actually
+    helps, and it beats leaving someone looking at a white page.
+  */
+  const handleContextLost = useCallback(() => {
+    setLost(true);
+    const next = stepDown(qualityId);
+    if (next) setQuality(next);
+  }, [qualityId]);
+
+  const restart = useCallback(() => {
+    setLost(false);
+    setSceneKey((key) => key + 1);
+  }, []);
 
   /* Arrow keys and space drive the car; they must not also scroll the page. */
   useEffect(() => {
@@ -104,13 +134,19 @@ export function DriveClient() {
       {started ? (
         <>
           <DriveScene
+            key={sceneKey}
             handle={handle}
             clockRef={clockRef}
             zoneRef={zoneRef}
             vehicleId={vehicleId}
             audio={audio}
+            qualityId={qualityId}
+            onContextLost={handleContextLost}
           />
-          <Hud handle={handle} clockRef={clockRef} zoneRef={zoneRef} />
+          {lost ? null : <Hud handle={handle} clockRef={clockRef} zoneRef={zoneRef} />}
+          {lost ? (
+            <ContextLostPanel qualityName={qualityById(qualityId).name} onRestart={restart} />
+          ) : null}
         </>
       ) : (
         <StartCard
@@ -119,6 +155,8 @@ export function DriveClient() {
           onPickVehicle={setVehicleId}
           soundOn={soundOn}
           onToggleSound={() => setSoundOn((on) => !on)}
+          qualityId={qualityId}
+          onPickQuality={setQuality}
         />
       )}
 
@@ -159,12 +197,16 @@ function StartCard({
   onPickVehicle,
   soundOn,
   onToggleSound,
+  qualityId,
+  onPickQuality,
 }: {
   onStart: () => void;
   vehicleId: string;
   onPickVehicle: (id: string) => void;
   soundOn: boolean;
   onToggleSound: () => void;
+  qualityId: QualityId;
+  onPickQuality: (id: QualityId) => void;
 }) {
   const chosen = vehicles.find((v) => v.id === vehicleId) ?? vehicles[0];
 
@@ -219,6 +261,37 @@ function StartCard({
           </p>
           <p className="mt-1 text-center font-mono text-[0.55rem] uppercase tracking-[0.16em] text-muted-foreground/70">
             Bodywork only · they all drive the same
+          </p>
+        </fieldset>
+
+        {/* ── Graphics ── */}
+        <fieldset className="mt-7 text-left">
+          <legend className="mb-3 w-full text-center font-mono text-[0.58rem] uppercase tracking-[0.25em] text-muted-foreground">
+            Graphics
+          </legend>
+          <div className="grid grid-cols-3 gap-2">
+            {QUALITIES.map((q) => {
+              const active = q.id === qualityId;
+              return (
+                <button
+                  key={q.id}
+                  type="button"
+                  onClick={() => onPickQuality(q.id)}
+                  aria-pressed={active}
+                  className={cn(
+                    'rounded-xl border px-3 py-2 font-mono text-[0.6rem] uppercase tracking-[0.14em] transition-colors',
+                    active
+                      ? 'border-lime/60 bg-lime/10 text-lime'
+                      : 'border-hairline text-muted-foreground hover:border-lime/30',
+                  )}
+                >
+                  {q.name}
+                </button>
+              );
+            })}
+          </div>
+          <p className="mt-3 text-center text-xs leading-relaxed text-muted-foreground">
+            {QUALITIES.find((q) => q.id === qualityId)?.blurb}
           </p>
         </fieldset>
 
@@ -310,6 +383,58 @@ function ReducedMotionNotice() {
         >
           See the work instead
         </Link>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * What a visitor sees instead of a blank canvas.
+ *
+ * A lost WebGL context paints the canvas white and leaves the DOM overlay
+ * running on top, so the page looks broken in a way that gives no clue what
+ * happened or what to do. This says both, in one sentence, and has already
+ * dropped the graphics tier by the time it appears — so the restart button is a
+ * real fix rather than an invitation to hit the same wall again.
+ */
+function ContextLostPanel({
+  qualityName,
+  onRestart,
+}: {
+  qualityName: string;
+  onRestart: () => void;
+}) {
+  return (
+    <div className="absolute inset-0 z-40 grid place-items-center bg-[#04060a] px-6">
+      <div className="max-w-md text-center">
+        <TriangleAlert className="mx-auto size-7 text-lime" />
+        <h2 className="mt-5 font-heading text-2xl font-extrabold tracking-tight">
+          The graphics ran out of room
+        </h2>
+        <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
+          Your browser gave up the 3D context, which it does when the GPU is asked for more
+          than it has. Nothing is broken and nothing was lost — it just cannot carry on from
+          here.
+        </p>
+        <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+          Graphics have been turned down to <span className="text-lime">{qualityName}</span>.
+          Starting again should hold.
+        </p>
+        <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
+          <button
+            type="button"
+            onClick={onRestart}
+            className="rounded-full bg-lime px-6 py-3 font-mono text-xs font-bold uppercase tracking-widest text-black transition-transform hover:-translate-y-0.5"
+          >
+            Start again
+          </button>
+          <Link
+            href="/"
+            className="rounded-full border border-hairline px-6 py-3 font-mono text-xs uppercase tracking-widest text-muted-foreground transition-colors hover:border-lime/40 hover:text-foreground"
+          >
+            Back to the site
+          </Link>
+        </div>
       </div>
     </div>
   );

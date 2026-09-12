@@ -225,13 +225,13 @@ function seeded(seed: number) {
   };
 }
 
-export function Trees() {
+export function Trees({ count = 620 }: { count?: number }) {
   const placed = useMemo(() => {
     const random = seeded(20260901);
     const out: Placed[] = [];
     let guard = 0;
 
-    while (out.length < 620 && guard < 60000) {
+    while (out.length < count && guard < 60000) {
       guard += 1;
       const x = (random() - 0.5) * 2 * (HALF - 2);
       const z = (random() - 0.5) * 2 * (HALF - 2);
@@ -283,7 +283,7 @@ export function Trees() {
       });
     }
     return out;
-  }, []);
+  }, [count]);
 
   useFrame((state) => {
     WIND_UNIFORMS.uTime.value = state.clock.elapsedTime;

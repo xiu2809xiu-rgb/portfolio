@@ -21,6 +21,7 @@ import { grassMaps, tarmacMaps } from './textures';
 import { PlazaLetters } from './PlazaLetters';
 import { Trees } from './Trees';
 import type { DayNight } from './useDayNight';
+import type { Quality } from './quality';
 
 /**
  * The world, laid out from `content/drive-world`.
@@ -43,15 +44,21 @@ function seeded(seed: number) {
   };
 }
 
-export function World({ clock }: { clock: React.RefObject<DayNight> }) {
+export function World({
+  clock,
+  quality,
+}: {
+  clock: React.RefObject<DayNight>;
+  quality: Quality;
+}) {
   return (
     <>
       <Terrain />
       <Roads />
       <PlazaLetters />
       <Districts clock={clock} />
-      <Trees />
-      <StreetLamps clock={clock} />
+      <Trees count={quality.trees} />
+      <StreetLamps clock={clock} quality={quality} />
       <Crates />
       <Boundary />
     </>
@@ -330,7 +337,13 @@ function massing(district: District) {
 }
 
 /** Lamps along the ring road, lit by the clock rather than by a toggle. */
-function StreetLamps({ clock }: { clock: React.RefObject<DayNight> }) {
+function StreetLamps({
+  clock,
+  quality,
+}: {
+  clock: React.RefObject<DayNight>;
+  quality: Quality;
+}) {
   const posts = useMemo(
     () =>
       Array.from({ length: 18 }, (_, i) => {
@@ -385,15 +398,23 @@ function StreetLamps({ clock }: { clock: React.RefObject<DayNight> }) {
               toneMapped={false}
             />
           </mesh>
-          <pointLight
-            ref={(light) => {
-              if (light) lights.current.push(light);
-            }}
-            color="#e8ffb0"
-            intensity={0}
-            distance={18}
-            decay={2}
-          />
+          {/*
+            Only the first few posts carry a real light. Every point light is
+            another set of uniforms in every lit material's shader, and beyond a
+            handful the extra ones are indistinguishable from the emissive bulb
+            already glowing on top of the post.
+          */}
+          {i < quality.lampLights ? (
+            <pointLight
+              ref={(light) => {
+                if (light) lights.current.push(light);
+              }}
+              color="#e8ffb0"
+              intensity={0}
+              distance={18}
+              decay={2}
+            />
+          ) : null}
         </group>
       ))}
     </>
