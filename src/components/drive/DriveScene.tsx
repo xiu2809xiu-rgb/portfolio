@@ -100,9 +100,14 @@ export function DriveScene({
   /* The harness needs to see tour state to assert on it; refs are invisible. */
   useEffect(() => {
     if (!shot && !probe) return;
-    (window as unknown as { __zone?: unknown; __car?: unknown }).__zone = zoneRef;
-    (window as unknown as { __zone?: unknown; __car?: unknown }).__car = handle;
-  }, [shot, probe, zoneRef, handle]);
+    const w = window as unknown as { __zone?: unknown; __car?: unknown; __input?: unknown };
+    w.__zone = zoneRef;
+    w.__car = handle;
+    /* The harness drives the camera itself, so it needs to be able to change
+       view without a keyboard — and the cockpit only builds itself when the
+       cockpit view is selected. */
+    w.__input = input;
+  }, [shot, probe, zoneRef, handle, input]);
 
   return (
     <Canvas
@@ -177,7 +182,7 @@ export function DriveScene({
       <Zones handle={handle} zoneRef={zoneRef} input={input} />
       <Beacon zoneRef={zoneRef} />
       <EngineSound audio={audio} handle={handle} input={input} />
-      <FollowCamera handle={handle} />
+      <FollowCamera handle={handle} input={input} vehicleId={vehicleId} />
       {quality.post ? <Post shot={shot || probe} /> : null}
       <ContextGuard onLost={onContextLost} />
     </Canvas>

@@ -11,6 +11,7 @@ import {
   type RapierRigidBody,
 } from '@react-three/rapier';
 import { vehicleById, type Vehicle } from '@/content/drive-vehicles';
+import { Cockpit } from './Cockpit';
 import type { DriveInputRef } from './useDriveControls';
 import type { DayNight } from './useDayNight';
 
@@ -133,6 +134,16 @@ export function Car({ input, spawn = [0, 1, 0], handle, clock, vehicleId }: CarP
     to run — the chase camera or the zone check — traps in wasm before the
     replacement car has written itself in.
   */
+  /*
+    The physics step is registered once; reading `vehicle` through it directly
+    would capture whichever car was selected at registration. A ref kept current
+    by an effect is the version that cannot go stale.
+  */
+  const tune = useRef(vehicle.tune);
+  useEffect(() => {
+    tune.current = vehicle.tune;
+  }, [vehicle.tune]);
+
   useEffect(
     () => () => {
       if (handle.current) {
@@ -239,7 +250,9 @@ export function Car({ input, spawn = [0, 1, 0], handle, clock, vehicleId }: CarP
       screen LEFT, and an unnegated positive steer sends the car the opposite way
       to the key that asked for it.
     */
-    const steerAngle = (-steer * MAX_STEER) / (1 + Math.abs(forwardSpeed) * STEER_FALLOFF);
+    const steerAngle =
+      (-steer * MAX_STEER * tune.current.agility) /
+      (1 + Math.abs(forwardSpeed) * STEER_FALLOFF);
     v.down.set(0, -1, 0).applyQuaternion(v.quat);
 
     let grounded = 0;
@@ -332,9 +345,13 @@ export function Car({ input, spawn = [0, 1, 0], handle, clock, vehicleId }: CarP
       if (!isFront) {
         // Rear-wheel drive, halved because two wheels share it.
         driveForce =
-          (throttle >= 0 ? throttle * ENGINE_FORCE : throttle * REVERSE_FORCE) * 0.5;
+          (throttle >= 0 ? throttle * ENGINE_FORCE : throttle * REVERSE_FORCE) *
+          0.5 *
+          tune.current.accel;
       }
-      const brakeForce = brake ? -Math.sign(rollSpeed) * BRAKE_FORCE * 0.25 : 0;
+      const brakeForce = brake
+        ? -Math.sign(rollSpeed) * BRAKE_FORCE * 0.25 * tune.current.braking
+        : 0;
       const resistance = -rollSpeed * ROLLING_RESISTANCE;
       let longitudinalImpulse = (driveForce + brakeForce + resistance) * FIXED_DT;
 
@@ -362,7 +379,12 @@ export function Car({ input, spawn = [0, 1, 0], handle, clock, vehicleId }: CarP
 
     // Drag, so the car has a top speed rather than an ever-rising one.
     if (speed > 0.1) {
-      v.impulse.copy(v.vel).multiplyScalar(-DRAG * speed * FIXED_DT);
+      /* Top speed is set by where drag balances engine force, so a higher top
+         speed is less drag rather than more power — which keeps acceleration
+         and maximum speed independently tunable. */
+      v.impulse
+        .copy(v.vel)
+        .multiplyScalar((-DRAG / tune.current.topSpeed) * speed * FIXED_DT);
       body.applyImpulse(v.impulse, true);
     }
 
@@ -426,6 +448,7 @@ export function Car({ input, spawn = [0, 1, 0], handle, clock, vehicleId }: CarP
       />
 
       <CarBody clock={clock} vehicle={vehicle} input={input} />
+      <Cockpit vehicle={vehicle} input={input} handle={handle} clock={clock} />
 
       {[0, 1, 2, 3].map((i) => (
         <group

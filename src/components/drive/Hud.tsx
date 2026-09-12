@@ -232,6 +232,7 @@ export function Hud({
             ['W A S D', 'Drive'],
             ['Space', 'Handbrake'],
             ['H', 'Horn'],
+            ['V', 'Change view'],
             ['E', 'Open a chapter'],
             ['R', 'Reset'],
           ].map(([key, action]) => (

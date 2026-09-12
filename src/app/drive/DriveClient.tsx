@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import type { CarHandle } from "@/components/drive/Car";
-import { makeZoneState, type ZoneState } from "@/components/drive/Zones";
-import { makeClock, type DayNight } from "@/components/drive/useDayNight";
-import { EngineAudio } from "@/components/drive/engine-audio";
-import { Hud } from "@/components/drive/Hud";
-import { SceneBoundary } from "@/components/drive/SceneBoundary";
-import { DEFAULT_VEHICLE, vehicles } from "@/content/drive-vehicles";
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { CarHandle } from '@/components/drive/Car';
+import { makeZoneState, type ZoneState } from '@/components/drive/Zones';
+import { makeClock, type DayNight } from '@/components/drive/useDayNight';
+import { EngineAudio } from '@/components/drive/engine-audio';
+import { Hud } from '@/components/drive/Hud';
+import { SceneBoundary } from '@/components/drive/SceneBoundary';
+import { DEFAULT_VEHICLE, vehicleById, vehicles } from '@/content/drive-vehicles';
 import {
   QUALITIES,
   qualityById,
@@ -15,12 +15,12 @@ import {
   stepDown,
   useQuality,
   type QualityId,
-} from "@/components/drive/quality";
-import dynamic from "next/dynamic";
-import Link from "next/link";
-import { ArrowLeft, TriangleAlert, Volume2, VolumeX } from "lucide-react";
-import { useStillness } from "@/lib/use-stillness";
-import { cn } from "@/lib/utils";
+} from '@/components/drive/quality';
+import dynamic from 'next/dynamic';
+import Link from 'next/link';
+import { ArrowLeft, TriangleAlert, Volume2, VolumeX } from 'lucide-react';
+import { useStillness } from '@/lib/use-stillness';
+import { cn } from '@/lib/utils';
 
 /*
   ssr:false is not optional here. Rapier is a WebAssembly module and three needs a
@@ -28,7 +28,7 @@ import { cn } from "@/lib/utils";
   looks at while roughly a megabyte of physics engine arrives.
 */
 const DriveScene = dynamic(
-  () => import("@/components/drive/DriveScene").then((m) => m.DriveScene),
+  () => import('@/components/drive/DriveScene').then((m) => m.DriveScene),
   {
     ssr: false,
     loading: () => <SceneLoading />,
@@ -85,9 +85,9 @@ export function DriveClient() {
   /* Arrow keys and space drive the car; they must not also scroll the page. */
   useEffect(() => {
     if (!started) return;
-    document.body.style.overflow = "hidden";
+    document.body.style.overflow = 'hidden';
     return () => {
-      document.body.style.overflow = "";
+      document.body.style.overflow = '';
     };
   }, [started]);
 
@@ -99,13 +99,13 @@ export function DriveClient() {
     any point afterwards.
   */
   const start = useCallback(() => {
-    const engine = new EngineAudio();
+    const engine = new EngineAudio(vehicleById(vehicleId).engine);
     engine.start();
     engine.setMuted(!soundOn);
     audioRef.current = engine;
     setAudio(engine);
     setStarted(true);
-  }, [soundOn]);
+  }, [soundOn, vehicleId]);
 
   /*
     Empty dependencies, reading through a ref. Keyed on `audio` instead, this
@@ -166,14 +166,9 @@ export function DriveClient() {
               onContextLost={handleContextLost}
             />
           </SceneBoundary>
-          {lost ? null : (
-            <Hud handle={handle} clockRef={clockRef} zoneRef={zoneRef} />
-          )}
+          {lost ? null : <Hud handle={handle} clockRef={clockRef} zoneRef={zoneRef} />}
           {lost ? (
-            <ContextLostPanel
-              qualityName={qualityById(qualityId).name}
-              onRestart={restart}
-            />
+            <ContextLostPanel qualityName={qualityById(qualityId).name} onRestart={restart} />
           ) : null}
         </>
       ) : (
@@ -204,12 +199,8 @@ export function DriveClient() {
           aria-pressed={soundOn}
           className="absolute left-5 top-[4.6rem] z-20 inline-flex items-center gap-2 rounded-full border border-white/12 bg-black/45 px-4 py-2 font-mono text-[0.62rem] uppercase tracking-[0.2em] text-white/70 backdrop-blur transition-colors hover:border-lime/50 hover:text-white"
         >
-          {soundOn ? (
-            <Volume2 className="size-3.5" />
-          ) : (
-            <VolumeX className="size-3.5" />
-          )}
-          {soundOn ? "Sound on" : "Muted"}
+          {soundOn ? <Volume2 className="size-3.5" /> : <VolumeX className="size-3.5" />}
+          {soundOn ? 'Sound on' : 'Muted'}
         </button>
       ) : null}
     </div>
@@ -252,9 +243,8 @@ function StartCard({
           Take the <span className="text-gradient-lime">car</span> out
         </h1>
         <p className="mx-auto mt-4 max-w-sm text-sm leading-relaxed text-muted-foreground">
-          A town with a ring road, a real day and night cycle, and my work
-          behind six gates. Nothing here is on the critical path of the
-          portfolio — it loads only if you ask.
+          A town with a ring road, a real day and night cycle, and my work behind six gates. Nothing
+          here is on the critical path of the portfolio — it loads only if you ask.
         </p>
 
         {/* ── Body ── */}
@@ -272,10 +262,10 @@ function StartCard({
                   onClick={() => onPickVehicle(vehicle.id)}
                   aria-pressed={active}
                   className={cn(
-                    "rounded-xl border p-3 text-left transition-colors",
+                    'rounded-xl border p-3 text-left transition-colors',
                     active
-                      ? "border-lime/60 bg-lime/10"
-                      : "border-hairline hover:border-lime/30 hover:bg-white/[0.03]",
+                      ? 'border-lime/60 bg-lime/10'
+                      : 'border-hairline hover:border-lime/30 hover:bg-white/[0.03]',
                   )}
                 >
                   <span
@@ -292,8 +282,11 @@ function StartCard({
           <p className="mt-3 text-center text-xs leading-relaxed text-muted-foreground">
             {chosen.blurb}
           </p>
-          <p className="mt-1 text-center font-mono text-[0.55rem] uppercase tracking-[0.16em] text-muted-foreground/70">
-            Bodywork only · they all drive the same
+          <p className="mt-1 text-center text-xs leading-relaxed text-lime/80">
+            {chosen.character}
+          </p>
+          <p className="mt-2 text-center font-mono text-[0.55rem] uppercase tracking-[0.16em] text-muted-foreground/70">
+            Each one has its own pace, brakes and engine note
           </p>
         </fieldset>
 
@@ -312,10 +305,10 @@ function StartCard({
                   onClick={() => onPickQuality(q.id)}
                   aria-pressed={active}
                   className={cn(
-                    "rounded-xl border px-3 py-2 font-mono text-[0.6rem] uppercase tracking-[0.14em] transition-colors",
+                    'rounded-xl border px-3 py-2 font-mono text-[0.6rem] uppercase tracking-[0.14em] transition-colors',
                     active
-                      ? "border-lime/60 bg-lime/10 text-lime"
-                      : "border-hairline text-muted-foreground hover:border-lime/30",
+                      ? 'border-lime/60 bg-lime/10 text-lime'
+                      : 'border-hairline text-muted-foreground hover:border-lime/30',
                   )}
                 >
                   {q.name}
@@ -334,18 +327,14 @@ function StartCard({
           onClick={onToggleSound}
           aria-pressed={soundOn}
           className={cn(
-            "mt-6 inline-flex items-center gap-2 rounded-full border px-4 py-2 font-mono text-[0.6rem] uppercase tracking-[0.2em] transition-colors",
+            'mt-6 inline-flex items-center gap-2 rounded-full border px-4 py-2 font-mono text-[0.6rem] uppercase tracking-[0.2em] transition-colors',
             soundOn
-              ? "border-lime/40 bg-lime/10 text-lime"
-              : "border-hairline text-muted-foreground hover:text-foreground",
+              ? 'border-lime/40 bg-lime/10 text-lime'
+              : 'border-hairline text-muted-foreground hover:text-foreground',
           )}
         >
-          {soundOn ? (
-            <Volume2 className="size-3.5" />
-          ) : (
-            <VolumeX className="size-3.5" />
-          )}
-          Engine sound {soundOn ? "on" : "off"}
+          {soundOn ? <Volume2 className="size-3.5" /> : <VolumeX className="size-3.5" />}
+          Engine sound {soundOn ? 'on' : 'off'}
         </button>
 
         <div>
@@ -360,11 +349,12 @@ function StartCard({
 
         <dl className="mx-auto mt-10 grid max-w-sm grid-cols-2 gap-x-6 gap-y-2 text-left font-mono text-[0.62rem] uppercase tracking-widest text-muted-foreground">
           {[
-            ["W A S D", "Drive"],
-            ["Space", "Handbrake"],
-            ["H", "Horn"],
-            ["E", "Open a project"],
-            ["R", "Reset"],
+            ['W A S D', 'Drive'],
+            ['Space', 'Handbrake'],
+            ['H', 'Horn'],
+            ['V', 'Change view'],
+            ['E', 'Open a project'],
+            ['R', 'Reset'],
           ].map(([key, action]) => (
             <div key={key} className="contents">
               <dt className="text-foreground/80">{key}</dt>
@@ -406,16 +396,16 @@ function ReducedMotionNotice() {
           This one is all movement
         </h1>
         <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-          Your system asks for reduced motion, and a driving game is continuous
-          camera movement by definition — there is no calmer version of it worth
-          shipping. Everything it links to lives on the ordinary pages.
+          Your system asks for reduced motion, and a driving game is continuous camera movement by
+          definition — there is no calmer version of it worth shipping. Everything it links to lives
+          on the ordinary pages.
         </p>
         <Link
           href="/work"
           className={cn(
-            "mt-8 inline-flex items-center gap-2 rounded-full border border-hairline px-6 py-3",
-            "font-mono text-xs uppercase tracking-widest text-muted-foreground",
-            "transition-colors hover:border-lime/50 hover:text-foreground",
+            'mt-8 inline-flex items-center gap-2 rounded-full border border-hairline px-6 py-3',
+            'font-mono text-xs uppercase tracking-widest text-muted-foreground',
+            'transition-colors hover:border-lime/50 hover:text-foreground',
           )}
         >
           See the work instead
@@ -449,14 +439,12 @@ function ContextLostPanel({
           The graphics ran out of room
         </h2>
         <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-          Your browser gave up the 3D context, which it does when the GPU is
-          asked for more than it has. Nothing is broken and nothing was lost —
-          it just cannot carry on from here.
+          Your browser gave up the 3D context, which it does when the GPU is asked for more than it
+          has. Nothing is broken and nothing was lost — it just cannot carry on from here.
         </p>
         <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-          Graphics have been turned down to{" "}
-          <span className="text-lime">{qualityName}</span>. Starting again
-          should hold.
+          Graphics have been turned down to <span className="text-lime">{qualityName}</span>.
+          Starting again should hold.
         </p>
         <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
           <button

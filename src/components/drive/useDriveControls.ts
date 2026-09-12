@@ -11,12 +11,20 @@ export interface DriveInput {
   reset: boolean;
   interact: boolean;
   horn: boolean;
+  /**
+   * Which camera. Counts up forever and is taken modulo the number of views, so
+   * adding a view never needs this to know how many there are.
+   */
+  view: number;
 }
 
 /** Shared mutable input, written by keyboard and touch alike. */
 export type DriveInputRef = { current: DriveInput };
 
-const KEYS: Record<string, keyof typeof AXES | 'brake' | 'reset' | 'interact' | 'horn'> = {
+const KEYS: Record<
+  string,
+  keyof typeof AXES | 'brake' | 'reset' | 'interact' | 'horn' | 'view'
+> = {
   KeyW: 'forward',
   ArrowUp: 'forward',
   KeyS: 'back',
@@ -29,6 +37,7 @@ const KEYS: Record<string, keyof typeof AXES | 'brake' | 'reset' | 'interact' | 
   KeyR: 'reset',
   KeyE: 'interact',
   KeyH: 'horn',
+  KeyV: 'view',
 };
 
 const AXES = { forward: 0, back: 0, left: 0, right: 0 };
@@ -53,6 +62,7 @@ export function useDriveControls(): DriveInputRef {
     reset: false,
     interact: false,
     horn: false,
+    view: 0,
   });
 
   useEffect(() => {
@@ -70,6 +80,11 @@ export function useDriveControls(): DriveInputRef {
       else if (action === 'reset') input.current.reset = down;
       else if (action === 'interact') input.current.interact = down;
       else if (action === 'horn') input.current.horn = down;
+      /* On the way down only, and once per press: holding V should not cycle
+         through every view at the keyboard repeat rate. */
+      else if (action === 'view') {
+        if (down && !event.repeat) input.current.view += 1;
+      }
       else held[action] = down ? 1 : 0;
     };
 

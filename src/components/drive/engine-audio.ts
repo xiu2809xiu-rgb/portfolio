@@ -1,5 +1,7 @@
 'use client';
 
+import type { Engine } from '@/content/drive-vehicles';
+
 /**
  * Engine note and horn, synthesised.
  *
@@ -20,10 +22,6 @@
  * which is audible as a click on every single frame.
  */
 
-/** Revs at idle and at the limiter, in Hz of fundamental firing frequency. */
-const IDLE_HZ = 32;
-const REDLINE_HZ = 118;
-
 /** Speed at which the engine is considered to be at full chat. */
 const SPEED_AT_REDLINE = 88;
 
@@ -31,6 +29,18 @@ const SPEED_AT_REDLINE = 88;
 const SMOOTHING = 0.06;
 
 export class EngineAudio {
+  /*
+    The voice is fixed for the life of the instance: the car is chosen before
+    the engine starts, so there is no case where the harmonic stack has to
+    change under a running oscillator — which would mean rebuilding the graph
+    mid-note and hearing the seam.
+  */
+  private readonly profile: Engine;
+
+  constructor(profile: Engine) {
+    this.profile = profile;
+  }
+
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
   private engineGain: GainNode | null = null;
@@ -43,15 +53,6 @@ export class EngineAudio {
   private hornOscillators: OscillatorNode[] = [];
   private muted = false;
   private running = false;
-
-  /** The harmonic stack. A lone sawtooth reads as a synth, not an engine. */
-  private static readonly PARTIALS = [
-    { ratio: 0.5, gain: 0.5, type: 'sawtooth' as OscillatorType, detune: 0 },
-    { ratio: 1, gain: 1.0, type: 'sawtooth' as OscillatorType, detune: 0 },
-    { ratio: 1.01, gain: 0.6, type: 'sawtooth' as OscillatorType, detune: 9 },
-    { ratio: 2, gain: 0.32, type: 'square' as OscillatorType, detune: 0 },
-    { ratio: 3.02, gain: 0.16, type: 'sawtooth' as OscillatorType, detune: -7 },
-  ];
 
   /** Must be called from a user gesture, or the context starts suspended. */
   start(): void {
@@ -72,7 +73,7 @@ export class EngineAudio {
     /* ── Engine ── */
     this.lowpass = ctx.createBiquadFilter();
     this.lowpass.type = 'lowpass';
-    this.lowpass.frequency.value = 420;
+    this.lowpass.frequency.value = this.profile.cutoffBase;
     this.lowpass.Q.value = 3.5;
 
     this.engineGain = ctx.createGain();
@@ -81,10 +82,10 @@ export class EngineAudio {
     this.lowpass.connect(this.engineGain);
     this.engineGain.connect(this.master);
 
-    for (const partial of EngineAudio.PARTIALS) {
+    for (const partial of this.profile.partials) {
       const osc = ctx.createOscillator();
       osc.type = partial.type;
-      osc.frequency.value = IDLE_HZ * partial.ratio;
+      osc.frequency.value = this.profile.idleHz * partial.ratio;
       osc.detune.value = partial.detune;
       const gain = ctx.createGain();
       gain.gain.value = partial.gain;
@@ -131,7 +132,7 @@ export class EngineAudio {
     this.hornGain.gain.value = 0;
     this.hornGain.connect(this.master);
 
-    for (const hz of [370, 466]) {
+    for (const hz of this.profile.horn) {
       const osc = ctx.createOscillator();
       osc.type = 'sawtooth';
       osc.frequency.value = hz;
@@ -177,10 +178,11 @@ export class EngineAudio {
       which is the one time revs and speed genuinely disagree.
     */
     const revs = Math.min(speed * 0.78 + demand * 0.34 + (airborne ? 0.22 : 0), 1);
-    const fundamental = IDLE_HZ + (REDLINE_HZ - IDLE_HZ) * revs;
+    const { idleHz, redlineHz, partials } = this.profile;
+    const fundamental = idleHz + (redlineHz - idleHz) * revs;
 
     for (let i = 0; i < this.oscillators.length; i += 1) {
-      const partial = EngineAudio.PARTIALS[i];
+      const partial = partials[i];
       this.oscillators[i].frequency.setTargetAtTime(
         fundamental * partial.ratio,
         now,
@@ -190,11 +192,15 @@ export class EngineAudio {
 
     /* Opening the filter is what "accelerating" sounds like; volume alone is
        just the same note louder. */
-    this.lowpass.frequency.setTargetAtTime(360 + revs * 2400 + demand * 900, now, SMOOTHING);
+    this.lowpass.frequency.setTargetAtTime(
+      this.profile.cutoffBase + revs * this.profile.cutoffSweep + demand * this.profile.cutoffThrottle,
+      now,
+      SMOOTHING,
+    );
     this.engineGain.gain.setTargetAtTime(0.1 + revs * 0.3 + demand * 0.1, now, SMOOTHING);
 
     /* Road noise follows the ground speed and cuts out when the wheels do. */
-    this.noiseGain.gain.setTargetAtTime(airborne ? 0.015 : speed * 0.16, now, 0.12);
+    this.noiseGain.gain.setTargetAtTime(airborne ? 0.015 : speed * this.profile.noise, now, 0.12);
     this.noiseFilter.frequency.setTargetAtTime(420 + speed * 1500, now, 0.12);
   }
 
