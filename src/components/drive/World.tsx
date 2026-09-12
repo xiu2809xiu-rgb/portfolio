@@ -10,8 +10,6 @@ import {
   districtGate,
   districts,
   HALF,
-  inDistrict,
-  onRoad,
   PLAZA_RADIUS,
   RING_RADIUS,
   ROAD_WIDTH,
@@ -20,6 +18,7 @@ import {
   type District,
 } from '@/content/drive-world';
 import { grassMaps, tarmacMaps } from './textures';
+import { Trees } from './Trees';
 import type { DayNight } from './useDayNight';
 
 /**
@@ -345,80 +344,6 @@ function massing(district: District) {
         { x: -6, z: 4, w: 4, d: 4, h: 4 },
       ];
   }
-}
-
-/**
- * Trees, placed by rule rather than scattered.
- *
- * Rejection sampling against the same predicates the roads and districts are
- * drawn from, plus a density that rises toward the edge of the map — so the wood
- * thickens into a treeline that reads as the boundary, instead of the invisible
- * wall the old version stopped you with.
- */
-function Trees() {
-  const trees = useMemo(() => {
-    const random = seeded(20260901);
-    const out: { x: number; z: number; scale: number; spin: number }[] = [];
-    let guard = 0;
-
-    while (out.length < 260 && guard < 20000) {
-      guard += 1;
-      const x = (random() - 0.5) * 2 * (HALF - 2);
-      const z = (random() - 0.5) * 2 * (HALF - 2);
-      const fromCentre = Math.hypot(x, z);
-
-      if (onRoad(x, z)) continue;
-      if (inDistrict(x, z)) continue;
-      // Keep the gates and their approaches visible.
-      if (districts.some((d) => {
-        const [gx, gz] = districtGate(d);
-        return Math.hypot(x - gx, z - gz) < 12;
-      })) continue;
-
-      // Denser further out: sparse parkland inside the ring, forest beyond it.
-      const density = THREE.MathUtils.clamp((fromCentre - PLAZA_RADIUS) / (HALF - PLAZA_RADIUS), 0, 1);
-      if (random() > 0.25 + density * 0.75) continue;
-      if (out.some((t) => Math.hypot(t.x - x, t.z - z) < 3.4)) continue;
-
-      out.push({ x, z, scale: 0.7 + random() * 0.9, spin: random() * Math.PI });
-    }
-    return out;
-  }, []);
-
-  return (
-    <>
-      <Instances limit={trees.length} castShadow receiveShadow>
-        <cylinderGeometry args={[0.15, 0.23, 1.7, 6]} />
-        <meshStandardMaterial color="#2b2118" roughness={0.95} />
-        {trees.map((tree, i) => (
-          <Instance key={i} position={[tree.x, 0.85 * tree.scale, tree.z]} scale={tree.scale} />
-        ))}
-      </Instances>
-
-      <Instances limit={trees.length} castShadow>
-        <coneGeometry args={[1.6, 4, 7]} />
-        <meshStandardMaterial color="#1d6b37" roughness={0.9} flatShading />
-        {trees.map((tree, i) => (
-          <Instance
-            key={i}
-            position={[tree.x, 3.3 * tree.scale, tree.z]}
-            scale={tree.scale}
-            rotation={[0, tree.spin, 0]}
-          />
-        ))}
-      </Instances>
-
-      <RigidBody type="fixed" name="trees">
-        {trees.map((tree, i) => (
-          <CylinderCollider
-            key={i}
-            args={[1.7 * tree.scale, 0.38 * tree.scale]}
-            position={[tree.x, 1.7 * tree.scale, tree.z]}
-          />
-        ))}
-      </RigidBody>
-    </>
-  );
 }
 
 /** Lamps along the ring road, lit by the clock rather than by a toggle. */

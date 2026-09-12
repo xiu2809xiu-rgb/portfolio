@@ -119,7 +119,7 @@ export function DriveScene({
         publish(state);
       }}
     >
-      <Sky clock={clockRef} colours={colours} advance={advance} onTick={onClock} />
+      <Sky colours={colours} advance={advance} onTick={onClock} />
 
       {/*
         Fixed timestep, not "vary". The vehicle integrates its own suspension

@@ -97,12 +97,10 @@ const FRAGMENT = /* glsl */ `
 `;
 
 export function Sky({
-  clock,
   colours,
   advance,
   onTick,
 }: {
-  clock: React.RefObject<DayNight>;
   colours: { sky: THREE.Color; fog: THREE.Color; sun: THREE.Color; ambient: THREE.Color };
   advance: (delta: number) => DayNight;
   /** Called about twice a second with the clock label, for the HUD. */
