@@ -56,3 +56,6 @@ scripts/_probe.mjs
 AGENTS.md
 CLAUDE.md
 .claude/
+
+# Scratch dirs from measurement harnesses
+.tmp-*/

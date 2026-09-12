@@ -47,10 +47,29 @@ export function DriveScene({
     () => typeof window !== 'undefined' && new URLSearchParams(location.search).has('debug'),
   );
 
+  /*
+    `?shot` is the screenshot harness's flag, kept separate from `?debug` so a
+    capture is not covered in collider wireframes.
+
+    It preserves the drawing buffer and publishes the renderer. Both are needed
+    because a headless browser has only software WebGL: it will not composite
+    this canvas into a page screenshot at all, so the pixels have to be read
+    back off the canvas instead — and `preserveDrawingBuffer` is what makes that
+    return the frame rather than an empty image.
+  */
+  const [shot] = useState(
+    () => typeof window !== 'undefined' && new URLSearchParams(location.search).has('shot'),
+  );
+
   useEffect(() => {
     if (!debug) return;
     (window as unknown as { __drive?: unknown }).__drive = handle;
   }, [debug, handle]);
+
+  const publish = (state: { gl: THREE.WebGLRenderer; scene: THREE.Scene; camera: THREE.Camera }) => {
+    if (!shot) return;
+    (window as unknown as { __three?: unknown }).__three = state;
+  };
 
   return (
     <Canvas
@@ -59,10 +78,18 @@ export function DriveScene({
          quickest way to turn a toy into a space heater. */
       dpr={[1, 1.75]}
       camera={{ position: [0, 6, -14], fov: 55, near: 0.1, far: 400 }}
-      gl={{ antialias: true, powerPreference: 'high-performance' }}
-      onCreated={({ scene }) => {
-        scene.background = new THREE.Color('#0a0f16');
-        scene.fog = new THREE.Fog('#0a0f16', 60, 220);
+      /*
+        `preserveDrawingBuffer` only under ?debug. Without it the drawing buffer
+        is swapped out after compositing, so anything reading the canvas back —
+        `toDataURL`, `drawImage` — gets an empty image and a screenshot harness
+        cannot tell "rendered black" from "rendered nothing". It costs a buffer
+        copy per frame, which is why it is not on for visitors.
+      */
+      gl={{ antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: shot }}
+      onCreated={(state) => {
+        state.scene.background = new THREE.Color('#0a0f16');
+        state.scene.fog = new THREE.Fog('#0a0f16', 60, 220);
+        publish(state);
       }}
     >
       <Sky clock={clockRef} colours={colours} advance={advance} onTick={onClock} />
