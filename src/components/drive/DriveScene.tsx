@@ -124,12 +124,12 @@ export function DriveScene({
         copy per frame, which is why it is not on for visitors.
       */
       /*
-        `antialias` is off deliberately. With a composer mounted the scene is
-        drawn into an offscreen buffer and only the final quad reaches the
-        default framebuffer, so MSAA on that framebuffer costs memory and
-        antialiases nothing.
+        Browser MSAA is useful only when there is no composer. Post tiers render
+        into an off-screen target and use the final SMAA pass instead; the safe
+        tier renders straight to the default framebuffer and therefore enables
+        native MSAA here.
       */
-      gl={{ antialias: false, powerPreference: quality.power, preserveDrawingBuffer: shot }}
+      gl={{ antialias: !quality.post, powerPreference: quality.power, preserveDrawingBuffer: shot }}
       onCreated={(state) => {
         /*
           No background colour: the sky is a dome now. A clear colour is painted
