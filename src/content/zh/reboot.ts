@@ -22,7 +22,7 @@ const zh: Readonly<Record<string, Partial<Pick<RebootStep, 'label' | 'detail'>>>
   'mounting avatar.glb': { label: '挂载 avatar.glb', detail: '2.09 MB · 7 段动画' },
   'warming WebGL context': { label: '预热 WebGL 上下文', detail: '约 48 MB 显存' },
   'compiling shaders': { label: '编译着色器' },
-  'hydrating routes': { label: '水合路由', detail: '29 条静态路由' },
+  'hydrating routes': { label: '水合路由', detail: '44 条静态路由' },
   'checking calendar': { label: '查询日历', detail: '只看忙闲' },
   ready: { detail: '欢迎回来' },
 };

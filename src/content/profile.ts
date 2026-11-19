@@ -63,13 +63,13 @@ export const marqueeTerms: readonly string[] = [
 /**
  * Headline numbers on the home page.
  *
- * Counted against the current content, not carried forward: five case studies in
+ * Counted against the current content, not carried forward: six case studies in
  * `projects.ts`, the distinct technologies listed across their stacks, and the
  * awards and certifications in `resume.ts`.
  */
 export const headlineStats: readonly HeadlineStat[] = [
-  { value: 5, suffix: '', label: 'Shipped projects' },
-  { value: 20, suffix: '+', label: 'Technologies used' },
-  { value: 6, suffix: '', label: 'Awards & certifications' },
+  { value: 6, suffix: '', label: 'Shipped projects' },
+  { value: 30, suffix: '+', label: 'Technologies used' },
+  { value: 7, suffix: '', label: 'Awards & certifications' },
   { value: 2028, suffix: '', label: 'Graduating' },
 ];

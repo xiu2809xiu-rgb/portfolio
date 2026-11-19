@@ -16,7 +16,7 @@ const en = {
   meta: {
     title: 'Work',
     description:
-      'Case studies from shipped work — SmartRecap (1st place, NYP × AWS Hackathon 2026), CertAIn, Singink, SwapLah, and a CCA website built from wireframe to deploy.',
+      'Case studies from shipped work — SmartRecap (1st place, NYP × AWS Hackathon 2026), CertAIn, Singink, SwapLah, ABC Retail, and a CCA website built from wireframe to deploy.',
   },
 
   index: {
@@ -60,12 +60,12 @@ const zh: typeof en = {
   meta: {
     title: '作品',
     description:
-      '做完并交付的项目案例：SmartRecap（2026 年 NYP × AWS 黑客松冠军）、CertAIn、Singink、SwapLah，还有一个从线框图一路做到上线的 CCA 网站。',
+      '已交付项目的案例：SmartRecap（2026 年 NYP × AWS 黑客松冠军）、CertAIn、Singink、SwapLah、ABC Retail，还有一个从线框图一路做到上线的社团（CCA）网站。',
   },
 
   index: {
     heading: (accent) => <>我{accent('真正交付过')}的项目</>,
-    lede: '完整的项目案例。每一篇都会讲清楚：我接手时面对的问题、我做了什么、做了哪些取舍，以及最后带来了什么改变——不只是一张截图加一串技术栈。',
+    lede: '完整的项目案例。每一篇都会讲清楚：我接手时面对的问题、我做了什么、做了哪些取舍，以及最后带来了什么改变——不只是一张截图加一串技术名词。',
   },
 
   status: {
@@ -83,7 +83,7 @@ const zh: typeof en = {
     architecture: '架构',
     code: '代码节选',
     demo: '演示',
-    demoTitle: (project) => `${project} 演示视频`,
+    demoTitle: (project) => `演示视频：${project}`,
     takeaways: '我的收获',
     next: (project) => `下一个：${project}`,
   },

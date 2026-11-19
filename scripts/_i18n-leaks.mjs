@@ -19,7 +19,14 @@ import { writeFileSync } from 'node:fs';
 
 const [, , BASE = 'http://localhost:3100', OUT = 'leaks.txt'] = process.argv;
 
-const WORK = ['smartrecap', 'certain', 'singink-support', 'table-tennis-cca-website', 'swaplah'];
+const WORK = [
+  'smartrecap',
+  'certain',
+  'singink-support',
+  'table-tennis-cca-website',
+  'swaplah',
+  'abc-retail',
+];
 const POSTS = [
   'building-a-booking-system-that-cannot-double-book',
   'shrinking-a-17mb-avatar-to-1mb',

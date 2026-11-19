@@ -31,12 +31,12 @@ export const hardSellLines: readonly SellLine[] = [
   // ── 9–16 · mildly self-aware ─────────────────────────────────────────────
   ['I should probably mention I won something recently.'],
   ['First place at the ', to('NYP × AWS Hackathon 2026', '/work/smartrecap'), '. Casually dropped.'],
-  ['Five ', to('shipped projects', '/work'), '. I counted them twice to be sure.'],
+  ['Six ', to('shipped projects', '/work'), '. I counted them twice to be sure.'],
   ['Front-end, back-end, and the ', to('UX decisions', '/#skills'), ' in between.'],
   ['I once built twenty-five page components in one night. On purpose.'],
   ['The ', to('overnight one', '/work/smartrecap'), ' placed first, if we are keeping score.'],
   ['We are keeping score.'],
-  ['Twenty-plus technologies. Six ', to('awards and certifications', '/#achievements'), '. Still counting.'],
+  ['Thirty-plus technologies. Seven ', to('awards and certifications', '/#achievements'), '. Still counting.'],
 
   // ── 17–24 · actually selling now ─────────────────────────────────────────
   ['Let me be direct: I would be good at this.'],
@@ -108,7 +108,7 @@ export const shoutingPoints: readonly string[] = [
   'MEAN SUS 74.2',
   '25 PAGE COMPONENTS IN 16.5 HOURS',
   'AVAILABLE FOR A 2027 INTERNSHIP',
-  '5 SHIPPED PROJECTS',
+  '6 SHIPPED PROJECTS',
   'FULL-STACK & UX',
   'SINGAPORE',
 ];

@@ -13,8 +13,9 @@ export const projects: readonly Project[] = [
     index: '01',
     title: 'SmartRecap',
     titleAccent: 'Cited Class Recaps',
-    role: 'Frontend — built the entire client',
+    role: 'Frontend lead — built the entire client',
     module: 'NYP × AWS Hackathon 2026 · Problem Statement 1',
+    term: 'Aug 2026',
     award: '1st Place',
     team: 'Team Stay Grounded — with Rihan Iqbal, Hong Yi Tan, Dillon Poh',
     status: 'completed',
@@ -31,7 +32,7 @@ export const projects: readonly Project[] = [
       '📄 25 page components',
       '🚫 Drops untraceable claims',
     ],
-    stack: ['React', 'TypeScript', 'WebGL', 'Python', 'AWS', 'Vercel', 'Render'],
+    stack: ['React', 'TypeScript', 'Three.js', 'FastAPI', 'Python', 'AWS', 'Vercel', 'Render'],
     preview: '/video/work/smartrecap.mp4',
     /* Captured from the live demo — see scripts/capture-smartrecap.mjs. */
     screenshots: [
@@ -122,36 +123,38 @@ export const projects: readonly Project[] = [
     index: '02',
     title: 'CertAIn',
     titleAccent: 'Offline-First Check-In',
-    role: 'Hi-fi prototype & usability study',
-    module: 'Event check-in and credentialing for an NPO',
+    role: 'Full-stack developer & UX researcher',
+    module: 'Full Stack Application Development · industry client',
+    term: 'Apr – Aug 2026',
     status: 'completed',
     featured: true,
     summary:
-      'An event check-in and credentialing system built to keep working when the venue network does not — NFC cards, QR codes and browser-local face recognition.',
+      'An event check-in system built for an industry client to keep working when the venue network does not — NFC, QR and on-device face check-in, with a real-time headcount and a venue map.',
     features: [
       '📶 Offline-first by design',
       '💳 Embossed PVC NFC cards',
       '🔳 QR fallback',
-      '🙂 On-device face recognition',
+      '🙂 On-device face check-in',
+      '📊 Real-time headcount',
       '🔀 Local / cloud engine toggle',
       '🗺️ Venue map',
       '🎫 Event stamps',
       '🧪 9-participant usability study',
     ],
-    stack: ['Figma', 'Node.js', 'Azure App Service', 'face-api.js', 'NFC', 'QR'],
+    stack: ['Node.js', 'React', 'Sequelize', 'Azure App Service', 'face-api.js', 'Figma', 'NFC', 'QR'],
     screenshots: [],
     caseStudy: [
       {
         label: 'Situation & Task',
-        body: 'Event venues are exactly where connectivity fails — crowded halls, borrowed networks, no guarantee of signal at the door. A check-in system that needs the cloud to admit someone will fail at the worst possible moment. CertAIn was designed offline-first for that reason: NFC cards and QR codes for identification, and face recognition running in the browser rather than on a server.',
+        body: 'CertAIn was built for an industry client through NYP’s Full Stack Application Development module, with requirements gathered from the client directly and interim reviews across the semester. Event venues are exactly where connectivity fails — crowded halls, borrowed networks, no guarantee of signal at the door — and a check-in system that needs the cloud to admit someone will fail at the worst possible moment. So it was designed offline-first: NFC cards and QR codes for identification, and face recognition running on the device rather than on a server.',
       },
       {
         label: 'Actions Taken',
-        body: 'I produced the hi-fi prototype in Figma and ran the usability study — moderated think-aloud sessions with nine participants against a "tech-hesitant SME owner" persona, across three scenarios: NFC check-in, the venue map, and event stamps. I also handled the physical side, producing custom embossed PVC NFC cards with print-ready artwork — bleed, outlined text — through an overseas supplier.',
+        body: 'I built it full-stack — Node.js and Sequelize behind a React client, deployed on Azure App Service — delivering NFC, QR and on-device face check-in, a real-time headcount and a venue map. The hi-fi prototype came first, in Figma, and I handled the physical side too: custom embossed PVC NFC cards with print-ready artwork — bleed, outlined text — through an overseas supplier. Then, in a separate module, I evaluated my own build: moderated think-aloud sessions with nine participants against a "tech-hesitant SME owner" persona, across three scenarios — NFC check-in, the venue map, and event stamps.',
       },
       {
         label: 'Results Achieved',
-        body: 'Mean SUS score of 74.2. The finding that mattered most was a failure: a map popup covering the route users needed, which blocked five of the nine participants. None of us had noticed it while building, because we already knew where the route was. Event Stamps was named the favourite feature unprompted by four participants.',
+        body: 'Graded A. The study gave a mean SUS score of 74.2, but the finding that mattered most was a failure: a map popup covering the route users needed, which blocked five of the nine participants. None of us had noticed it while building, because we already knew where the route was. Event Stamps was named the favourite feature unprompted by four participants.',
       },
     ],
     metrics: [
@@ -173,9 +176,9 @@ export const projects: readonly Project[] = [
     index: '03',
     title: 'Singink',
     titleAccent: 'Support & Ticketing',
-    role: 'Lead Developer',
+    role: 'Owned the customer support system',
     module: 'IT1x25 Web Development Project',
-    term: 'AY2025 Semester 2',
+    term: 'AY2025/26 Semester 2',
     status: 'completed',
     featured: true,
     summary:
@@ -190,7 +193,7 @@ export const projects: readonly Project[] = [
       '📈 Analytics charts',
       '❓ FAQ search',
     ],
-    stack: ['Python', 'Flask', 'Jinja2', 'SQLAlchemy', 'MySQL', 'Bootstrap 5', 'JavaScript', 'HTML5/CSS3'],
+    stack: ['Python', 'Flask', 'Jinja2', 'SQLAlchemy', 'SQLite', 'Bootstrap 5', 'JavaScript', 'HTML5/CSS3', 'Gunicorn'],
     preview: '/video/work/singink-support.mp4',
     screenshots: [
       { src: '/img/work/ticketing/support-center.jpg', title: 'Support Center', url: 'singink.com/support' },
@@ -255,7 +258,7 @@ export const projects: readonly Project[] = [
       },
       {
         label: 'Results Achieved',
-        body: 'Structured intake replaced free-text email, so tickets arrived with the category, priority and detail needed to action them without a follow-up question. Status tracking gave users a way to check progress themselves, and the admin dashboard put queue state and resolution times on one screen.',
+        body: 'Structured intake replaced free-text email, so tickets arrived with the category, priority and detail needed to action them without a follow-up question. Status tracking gave users a way to check progress themselves, and the admin dashboard put queue state and resolution times on one screen. The team capstone was graded A; it was version-controlled through GitLab and deployed with Gunicorn.',
       },
     ],
     metrics: [
@@ -265,7 +268,7 @@ export const projects: readonly Project[] = [
       { value: 15, suffix: '+', label: 'Validation rules' },
     ],
     architecture: {
-      flow: ['🌐 Browser (HTML/CSS/JS)', '⚙️ Flask + Jinja2', '🛠️ SQLAlchemy ORM', '🗄️ MySQL Database'],
+      flow: ['🌐 Browser (HTML/CSS/JS)', '⚙️ Flask + Jinja2', '🛠️ SQLAlchemy ORM', '🗄️ SQLite Database'],
       description:
         'MVC architecture with Flask blueprints for modular routing, Jinja2 templates for server-side rendering, and SQLAlchemy for database abstraction. Bootstrap 5 for responsive UI components.',
     },
@@ -312,7 +315,7 @@ export const projects: readonly Project[] = [
     titleAccent: 'Website',
     role: 'Front-End Developer',
     module: 'IT1x15 UX Design in Web Development',
-    term: 'AY2025 Semester 1',
+    term: 'AY2025/26 Semester 1',
     status: 'completed',
     featured: true,
     summary:
@@ -437,8 +440,9 @@ export const projects: readonly Project[] = [
     index: '05',
     title: 'SwapLah',
     titleAccent: 'Student Co-op Marketplace',
-    role: 'User management',
+    role: 'User management owner',
     module: 'Agile Development Process with DevOps',
+    term: 'Apr – Aug 2026',
     status: 'completed',
     summary:
       'A student co-op marketplace built under an Agile and DevOps module and run through GitLab. I owned user management end to end.',
@@ -465,7 +469,7 @@ export const projects: readonly Project[] = [
       },
       {
         label: 'Results Achieved',
-        body: 'Given-When-Then criteria turned out to be the useful part: writing the acceptance conditions before the code meant the session-timeout and access-restriction cases were specified rather than discovered, and the test plan wrote itself from the stories.',
+        body: 'Given-When-Then criteria turned out to be the useful part: writing the acceptance conditions before the code meant the session-timeout and access-restriction cases were specified rather than discovered, and the test plan wrote itself from the stories. The module was graded A.',
       },
     ],
     metrics: [
@@ -479,6 +483,61 @@ export const projects: readonly Project[] = [
       'Password hashing and session expiry are the parts of auth that are easy to skip and expensive to retrofit.',
       'Raw sqlite3 rather than an ORM makes the SQL visible, which is a fair trade on a small schema.',
       'Writing the CI/CD and security documentation forced me to understand the pipeline rather than just use it.',
+    ],
+    links: [],
+  },
+  {
+    slug: 'abc-retail',
+    index: '06',
+    title: 'ABC Retail',
+    titleAccent: 'Reviewed & Rebuilt',
+    role: 'Individual assignment',
+    module: 'IT2113 Cloud Computing',
+    term: 'Aug 2026',
+    status: 'completed',
+    summary:
+      'A storefront prototype generated with Kiro, AWS’s agentic development environment — then reviewed by hand like any other first draft. Manual review found seven defects the generated tests had missed. The verified logic stayed; every component was rebuilt.',
+    features: [
+      '📝 Spec-driven generation in Kiro',
+      '🔍 Seven defects found by hand',
+      '♻️ Pure-logic layer kept as generated',
+      '🧱 All ten components rebuilt',
+      '🛒 Category & price filters',
+      '💱 SGD / MYR currency toggle',
+      '🧊 3D product stage on desktop',
+      '🔒 Private S3 behind CloudFront',
+    ],
+    stack: ['React', 'Vite', 'Tailwind CSS', 'Three.js', 'Kiro', 'Amazon S3', 'CloudFront'],
+    screenshots: [],
+    caseStudy: [
+      {
+        label: 'Situation & Task',
+        body: 'The Cloud Computing assignment was a migration proposal for ABC Retail, the brief’s case-study company: a Singapore electronics retailer running its website, database and file storage on one ageing server. Part of it was a front-end prototype of the storefront, generated with Kiro and hosted on AWS. Generating the site was the easy half. Reviewing it was the half worth doing well.',
+      },
+      {
+        label: 'Actions Taken',
+        body: 'I used Kiro’s spec-driven workflow rather than ad-hoc prompting, so the requirements, design and task list were reviewed before any code existed. Its baseline — 46 source files, ten components, 21 test files — then went through manual review: click-testing, keyboard navigation, profiling, and measuring at small viewports. The pure-logic layer was correct and covered by property-based tests, so it stayed exactly as Kiro wrote it. Every component was rebuilt on its original structure and props.',
+      },
+      {
+        label: 'Results Achieved',
+        body: 'Seven defects that no automated check had caught, each fixed — among them an Add to Cart button made unclickable by a stray stacking context, carousel slides hidden from screen readers but still reachable by Tab (a WCAG 4.1.2 failure), a currency toggle that updated state but never re-rendered, and a WebGL menu that kept rendering after it was removed. The project grew to 191 source files and 44 test files, and is served from a private S3 bucket behind CloudFront. Graded A.',
+      },
+    ],
+    metrics: [
+      { value: 7, label: 'Defects found by hand' },
+      { value: 10, label: 'Components rebuilt' },
+      { value: 191, label: 'Source files, from 46' },
+      { value: 44, label: 'Test files, from 21' },
+    ],
+    architecture: {
+      flow: ['Kiro spec', 'Vite build', 'Private S3 bucket', 'CloudFront', 'Visitor'],
+      description:
+        'The bucket is never public. Origin Access Control lets only this CloudFront distribution read it, so visitors get HTTPS and edge caching while Block Public Access stays on. Deploying is three steps: build, sync dist/ to the bucket, invalidate the cache.',
+    },
+    learnings: [
+      'A generated test suite checks what the generator thought to check. An Add to Cart button nobody could click passed all of it.',
+      'Every defect that mattered surfaced under a mouse, a keyboard, a profiler or a narrow viewport — none under the test runner.',
+      'Reviewing well includes deciding what to leave alone: the filtering and price formatting a visitor uses today are still Kiro’s code, because they were right.',
     ],
     links: [],
   },
