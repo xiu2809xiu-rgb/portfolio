@@ -281,6 +281,17 @@
       transition-duration: 0.01ms !important;
       scroll-behavior: auto !important;
     }
+
+    /*
+      The route transition (app/[lang]/template.tsx) is driven from JavaScript
+      through inline styles, which the rule above cannot reach. Pinning the
+      wrapper to its finished state means the page is simply there — from the
+      first byte of HTML, not from whenever the script gets round to it.
+    */
+    .route-enter {
+      opacity: 1 !important;
+      transform: none !important;
+    }
   }
 }
 

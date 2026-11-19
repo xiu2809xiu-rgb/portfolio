@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { DateTime } from 'luxon';
 import { CalendarClock, ShieldCheck, Zap } from 'lucide-react';
 import { BookingFlow } from '@/components/booking/BookingFlow';
 import type { PolicyConfig } from '@/components/booking/types';
@@ -44,6 +45,8 @@ export default async function BookPage() {
   const config = container.policy.toClientConfig() as PolicyConfig;
   const live = container.calendar.isLive;
   const assurances = assurancesFor(live, t.assurances);
+  // Decided here, once, so the browser opens the calendar on the month this HTML names.
+  const initialMonth = DateTime.now().setZone(config.timezone).toFormat('yyyy-MM');
 
   return (
     <div className="wrap pb-24 pt-32 md:pt-40">
@@ -60,7 +63,11 @@ export default async function BookPage() {
       </div>
 
       <div className="mx-auto mt-12 max-w-5xl">
-        <BookingFlow initialConfig={config} calendarLive={container.calendar.isLive} />
+        <BookingFlow
+          initialConfig={config}
+          initialMonth={initialMonth}
+          calendarLive={container.calendar.isLive}
+        />
       </div>
 
       <ul className="mx-auto mt-12 grid max-w-5xl gap-4 sm:grid-cols-3">

@@ -34,6 +34,13 @@ const getServerSnapshot = () => false;
  * Use this wherever the *markup* changes. For components that only vary
  * animation values — a duration, a distance — motion's hook is fine, since the
  * rendered element is the same either way.
+ *
+ * No mismatch is not the same as no cost. When the two trees put different
+ * elements in the same place, React still has to unmount one and mount the
+ * other once the real value arrives, and everything inside is built twice. That
+ * is fine for a counter or a card. It is not fine near the top of the page: the
+ * route template once swapped its wrapper this way and rebuilt every page for
+ * every reduced-motion visitor. Keep the swap small, or do it in CSS.
  */
 export function useStillness(): boolean {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);

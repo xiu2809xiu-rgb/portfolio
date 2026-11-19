@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { DateTime } from 'luxon';
 import { AnimatePresence, motion } from 'motion/react';
 import { Clock, Globe } from 'lucide-react';
 import { toast } from 'sonner';
@@ -28,6 +27,15 @@ import { useAvailability } from './useAvailability';
 interface BookingFlowProps {
   /** Server-rendered policy so the first paint has real hours, not a guess. */
   initialConfig: PolicyConfig;
+  /**
+   * The month the calendar opens on, `yyyy-MM` in the owner's zone, as the
+   * server's clock has it. Handed down rather than read from the clock here: the
+   * month's name is in the server's HTML, and a browser whose clock disagrees
+   * about what month it is would otherwise render a different one while
+   * hydrating — at midnight on the last day of a month, or on any device with
+   * its date set wrong.
+   */
+  initialMonth: string;
   calendarLive: boolean;
 }
 
@@ -39,16 +47,14 @@ interface BookingFlowProps {
  * the visitor back to step one *and* refreshes availability, rather than leaving
  * them staring at a form for a slot that no longer exists.
  */
-export function BookingFlow({ initialConfig, calendarLive }: BookingFlowProps) {
+export function BookingFlow({ initialConfig, initialMonth, calendarLive }: BookingFlowProps) {
   const t = useT(bookingDict);
   const { minutes: minutesLabel } = useT(commonDict);
   const ownerTimezone = initialConfig.timezone;
 
   const [duration, setDuration] = useState<number>(30);
   const [step, setStep] = useState<BookingStep>('when');
-  const [month, setMonth] = useState(() =>
-    DateTime.now().setZone(ownerTimezone).toFormat('yyyy-MM'),
-  );
+  const [month, setMonth] = useState(initialMonth);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<AvailabilitySlot | null>(null);
   const [submitting, setSubmitting] = useState(false);
