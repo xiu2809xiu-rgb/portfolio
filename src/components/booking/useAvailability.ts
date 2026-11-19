@@ -1,7 +1,11 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { bookingDict } from '@/i18n/dictionaries/booking';
+import { useT } from '@/i18n/LocaleProvider';
 import type { ApiError, DayResponse, MonthResponse } from './types';
+
+type ErrorText = (typeof bookingDict)['en']['errors'];
 
 /**
  * Turns a failed response into something a visitor can act on.
@@ -9,19 +13,20 @@ import type { ApiError, DayResponse, MonthResponse } from './types';
  * Never surfaces the upstream text verbatim — Google returns strings like
  * "invalid_grant", which mean nothing to a visitor and leak how the integration
  * is wired. The owner still gets the real reason from the server logs and
- * /api/health.
+ * /api/health. The words are chosen by the response's code, so they come out in
+ * the page's language whatever language the server wrote its message in.
  */
-async function readError(response: Response): Promise<string> {
+async function readError(response: Response, t: ErrorText): Promise<string> {
   try {
     const body = (await response.json()) as ApiError;
-    if (body.error === 'calendar_unavailable') {
-      return "I can't reach my calendar right now, so I can't show what's free. Try again in a minute, or just email me.";
+    if (body.error === 'calendar_unavailable') return t.availability.calendarDown;
+    if (body.error === 'rate_limited' && body.message) {
+      return t.availability.rateLimited(body.message);
     }
-    if (body.error === 'rate_limited') return body.message;
   } catch {
     /* fall through to the generic message */
   }
-  return 'Could not load availability. Please try again.';
+  return t.availability.generic;
 }
 
 interface AvailabilityState<T> {
@@ -40,6 +45,7 @@ interface AvailabilityState<T> {
  * correct one.
  */
 export function useAvailability(duration: number) {
+  const t = useT(bookingDict).errors;
   const [month, setMonth] = useState<AvailabilityState<MonthResponse>>({
     data: null,
     loading: true,
@@ -68,20 +74,16 @@ export function useAvailability(duration: number) {
           { signal: controller.signal, cache: 'no-store' },
         );
         if (!response.ok) {
-          setMonth({ data: null, loading: false, error: await readError(response) });
+          setMonth({ data: null, loading: false, error: await readError(response, t) });
           return;
         }
         setMonth({ data: (await response.json()) as MonthResponse, loading: false, error: null });
       } catch (error) {
         if ((error as Error).name === 'AbortError') return;
-        setMonth({
-          data: null,
-          loading: false,
-          error: 'Could not reach the server. Check your connection and try again.',
-        });
+        setMonth({ data: null, loading: false, error: t.network });
       }
     },
-    [duration],
+    [duration, t],
   );
 
   const loadDay = useCallback(
@@ -98,20 +100,16 @@ export function useAvailability(duration: number) {
           cache: 'no-store',
         });
         if (!response.ok) {
-          setDay({ data: null, loading: false, error: await readError(response) });
+          setDay({ data: null, loading: false, error: await readError(response, t) });
           return;
         }
         setDay({ data: (await response.json()) as DayResponse, loading: false, error: null });
       } catch (error) {
         if ((error as Error).name === 'AbortError') return;
-        setDay({
-          data: null,
-          loading: false,
-          error: 'Could not reach the server. Check your connection and try again.',
-        });
+        setDay({ data: null, loading: false, error: t.network });
       }
     },
-    [duration],
+    [duration, t],
   );
 
   useEffect(

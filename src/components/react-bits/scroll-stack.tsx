@@ -65,6 +65,8 @@ export interface ScrollStackProps {
   onIndexChange?: (index: number) => void;
   /** Extra classes for the outer section */
   className?: string;
+  /** Accessible name of the scrolling region, in the reader's language */
+  ariaLabel?: string;
 }
 
 const DEFAULT_ITEMS: ScrollStackItem[] = [
@@ -269,6 +271,7 @@ export const ScrollStack = ({
   showCounter = true,
   onIndexChange,
   className,
+  ariaLabel = "Scrolling card stack",
 }: ScrollStackProps) => {
   const custom = useMemo(
     () => Children.toArray(children).filter((node) => isValidElement(node)),
@@ -423,7 +426,7 @@ export const ScrollStack = ({
   return (
     <section
       ref={rootRef}
-      aria-label="Scrolling card stack"
+      aria-label={ariaLabel}
       className={cn("relative w-full", className)}
       style={{ height: `${runway}vh` }}
     >

@@ -1,21 +1,33 @@
 import type { Metadata } from 'next';
 import { Reveal } from '@/components/common/Reveal';
-import { usesCategories, usesIntro } from '@/content/uses';
+import { usesContent } from '@/content/localized/uses';
+import { usesDict } from '@/i18n/dictionaries/uses';
+import { getLocale, localizedAlternates } from '@/i18n/server';
 
-export const metadata: Metadata = {
-  title: 'Uses',
-  description:
-    'The editor, stack, hardware, and keyboard shortcuts I actually use every day.',
-  alternates: { canonical: '/uses' },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  const t = usesDict[locale].meta;
 
-export default function UsesPage() {
+  return {
+    title: t.title,
+    description: t.description,
+    alternates: localizedAlternates(locale, '/uses'),
+  };
+}
+
+export default async function UsesPage() {
+  const locale = await getLocale();
+  const t = usesDict[locale];
+  const { usesCategories, usesIntro } = usesContent[locale];
+
   return (
     <div className="wrap pb-24 pt-32 md:pt-40">
       <header className="max-w-3xl">
         <p className="eyebrow">~/richie/uses</p>
         <h1 className="mt-4 font-heading text-[clamp(2.25rem,7vw,4.5rem)] font-extrabold leading-[1.02] tracking-[-0.03em]">
-          What I <span className="text-gradient-lime">actually use</span>
+          {t.heading((words) => (
+            <span className="text-gradient-lime">{words}</span>
+          ))}
         </h1>
         <p className="mt-5 text-base leading-relaxed text-muted-foreground sm:text-lg">
           {usesIntro}

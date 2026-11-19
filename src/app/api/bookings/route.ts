@@ -58,9 +58,11 @@ export async function POST(request: NextRequest) {
       {
         error: 'invalid_request',
         message: parsed.error.issues[0]?.message ?? 'Please check the form and try again.',
+        /* `code` lets a page that is not in English say what is wrong with a field. */
         issues: parsed.error.issues.map((issue) => ({
           field: issue.path.join('.'),
           message: issue.message,
+          code: issue.code,
         })),
       },
       { status: 400 },

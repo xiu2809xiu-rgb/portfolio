@@ -3,26 +3,37 @@ import Image from 'next/image';
 import { Link } from '@/i18n/Link';
 import { ArrowUpRight } from 'lucide-react';
 import { Reveal } from '@/components/common/Reveal';
-import { projects } from '@/content/projects';
+import { projectsContent } from '@/content/localized/projects';
+import { workDict } from '@/i18n/dictionaries/work';
+import { getLocale, localizedAlternates } from '@/i18n/server';
 
-export const metadata: Metadata = {
-  title: 'Work',
-  description:
-    'Case studies from shipped work — SmartRecap (1st place, NYP × AWS Hackathon 2026), CertAIn, Singink, SwapLah, and a CCA website built from wireframe to deploy.',
-  alternates: { canonical: '/work' },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  const t = workDict[locale].meta;
 
-export default function WorkPage() {
+  return {
+    title: t.title,
+    description: t.description,
+    alternates: localizedAlternates(locale, '/work'),
+  };
+}
+
+export default async function WorkPage() {
+  const locale = await getLocale();
+  const t = workDict[locale];
+  const { projects } = projectsContent[locale];
+
   return (
     <div className="wrap pb-24 pt-32 md:pt-40">
       <header className="max-w-3xl">
         <p className="eyebrow">~/richie/work</p>
         <h1 className="mt-4 font-heading text-[clamp(2.25rem,7vw,4.5rem)] font-extrabold leading-[1.02] tracking-[-0.03em]">
-          Things I have <span className="text-gradient-lime">actually shipped</span>
+          {t.index.heading((words) => (
+            <span className="text-gradient-lime">{words}</span>
+          ))}
         </h1>
         <p className="mt-5 text-base leading-relaxed text-muted-foreground sm:text-lg">
-          Full case studies. Each covers the problem I was handed, what I built, the trade-offs I
-          made, and what changed as a result — not just a screenshot and a tech list.
+          {t.index.lede}
         </p>
       </header>
 
@@ -72,7 +83,7 @@ export default function WorkPage() {
                   </span>
                   <span className="inline-flex items-center gap-1.5 rounded-full border border-success/30 bg-success/10 px-2.5 py-0.5 font-mono text-[0.6rem] uppercase tracking-widest text-success">
                     <span className="size-1.5 rounded-full bg-success" />
-                    {project.status === 'completed' ? 'Completed' : 'In progress'}
+                    {project.status === 'completed' ? t.status.completed : t.status.inProgress}
                   </span>
                 </div>
 

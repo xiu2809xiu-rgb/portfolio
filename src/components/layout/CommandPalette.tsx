@@ -15,18 +15,40 @@ import {
   CommandSeparator,
   CommandShortcut,
 } from '@/components/ui/command';
-import { profile } from '@/content/profile';
+import { navigationContent } from '@/content/localized/navigation';
+import { profileContent } from '@/content/localized/profile';
+import { chromeDict } from '@/i18n/dictionaries/chrome';
+import { commonDict } from '@/i18n/dictionaries/common';
+import { useLocalizePath, useT } from '@/i18n/LocaleProvider';
 
 interface PaletteEntry {
   slug: string;
   title: string;
   subtitle: string;
+  /** More to match on than the title — the same title in the other language, say. */
+  keywords?: string[];
 }
 
 interface CommandPaletteProps {
   projects: PaletteEntry[];
   posts: PaletteEntry[];
 }
+
+type SearchKey = keyof (typeof chromeDict)['en']['palette']['search'];
+
+/**
+ * What a fixed entry is matched against.
+ *
+ * Read from both languages on purpose, not from the current one: a bilingual
+ * reader types whichever word comes first, so `作品` has to find Work on the
+ * English site and `work` has to find 作品 on the Chinese one. cmdk also uses
+ * `value` as the item's identity, so that stays the English list everywhere and
+ * the Chinese list rides along as keywords.
+ */
+const searchTerms = (entry: SearchKey) => ({
+  value: chromeDict.en.palette.search[entry],
+  keywords: [chromeDict.zh.palette.search[entry]],
+});
 
 /**
  * ⌘K / Ctrl+K command palette.
@@ -39,6 +61,15 @@ export function CommandPalette({ projects, posts }: CommandPaletteProps) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const router = useRouter();
+  const localize = useLocalizePath();
+  const t = useT(chromeDict).palette;
+  const common = useT(commonDict);
+  const { primaryNav, asideNav } = useT(navigationContent);
+  const { profile } = useT(profileContent);
+
+  // A page is called here what the navigation calls it, so the two cannot drift.
+  const pageLabel = (href: string) =>
+    [...primaryNav, ...asideNav].find((item) => item.href === href)?.label ?? href;
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -70,7 +101,10 @@ export function CommandPalette({ projects, posts }: CommandPaletteProps) {
     setTimeout(action, 80);
   }, []);
 
-  const go = useCallback((href: string) => run(() => router.push(href)), [router, run]);
+  const go = useCallback(
+    (href: string) => run(() => router.push(localize(href))),
+    [localize, router, run],
+  );
 
   const openExternal = useCallback(
     (href: string) => run(() => window.open(href, '_blank', 'noopener,noreferrer')),
@@ -81,15 +115,15 @@ export function CommandPalette({ projects, posts }: CommandPaletteProps) {
     try {
       await navigator.clipboard.writeText(profile.email);
       setCopied(true);
-      toast.success('Email address copied', { description: profile.email });
+      toast.success(t.emailCopied, { description: profile.email });
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      toast.error('Could not copy', {
-        description: 'Your browser blocked clipboard access.',
+      toast.error(t.copyFailed, {
+        description: t.copyFailedDetail,
       });
     }
     setOpen(false);
-  }, []);
+  }, [profile.email, t]);
 
   return (
     <>
@@ -97,7 +131,7 @@ export function CommandPalette({ projects, posts }: CommandPaletteProps) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        aria-label="Open command palette"
+        aria-label={t.open}
         className="hidden items-center gap-2 rounded-full border border-hairline px-3 py-2 font-mono text-[0.65rem] uppercase tracking-widest text-muted-foreground transition-colors hover:border-lime/40 hover:text-foreground md:inline-flex"
       >
         <Terminal className="size-3.5" />
@@ -107,8 +141,8 @@ export function CommandPalette({ projects, posts }: CommandPaletteProps) {
       <CommandDialog
         open={open}
         onOpenChange={setOpen}
-        title="Command palette"
-        description="Search and jump anywhere on this site"
+        title={t.title}
+        description={t.description}
       >
         {/*
           This shadcn build of CommandDialog renders a Dialog and drops children
@@ -116,25 +150,25 @@ export function CommandPalette({ projects, posts }: CommandPaletteProps) {
           shared store — hence the explicit wrapper.
         */}
         <Command>
-        <CommandInput placeholder="Jump to a page, project, or post…" />
-        <CommandList>
-          <CommandEmpty>Nothing matches that.</CommandEmpty>
+        <CommandInput placeholder={t.placeholder} />
+        <CommandList label={t.results}>
+          <CommandEmpty>{t.empty}</CommandEmpty>
 
-          <CommandGroup heading="Go to">
-            <CommandItem onSelect={() => go('/')} value="home start">
-              <Home /> Home
+          <CommandGroup heading={t.groups.goTo}>
+            <CommandItem onSelect={() => go('/')} {...searchTerms('home')}>
+              <Home /> {pageLabel('/')}
             </CommandItem>
-            <CommandItem onSelect={() => go('/work')} value="work projects case studies">
-              <Braces /> Work
+            <CommandItem onSelect={() => go('/work')} {...searchTerms('work')}>
+              <Braces /> {pageLabel('/work')}
             </CommandItem>
-            <CommandItem onSelect={() => go('/blog')} value="blog writing posts articles">
-              <BookOpen /> Blog
+            <CommandItem onSelect={() => go('/blog')} {...searchTerms('blog')}>
+              <BookOpen /> {pageLabel('/blog')}
             </CommandItem>
-            <CommandItem onSelect={() => go('/uses')} value="uses tools setup gear stack">
-              <Wrench /> Uses
+            <CommandItem onSelect={() => go('/uses')} {...searchTerms('uses')}>
+              <Wrench /> {pageLabel('/uses')}
             </CommandItem>
-            <CommandItem onSelect={() => go('/book')} value="book schedule calendar meeting call">
-              <CalendarClock /> Book a session
+            <CommandItem onSelect={() => go('/book')} {...searchTerms('book')}>
+              <CalendarClock /> {common.header.bookSession}
               <CommandShortcut>↵</CommandShortcut>
             </CommandItem>
           </CommandGroup>
@@ -144,23 +178,24 @@ export function CommandPalette({ projects, posts }: CommandPaletteProps) {
             the portfolio, and someone scanning the palette for the work should
             not have to step over a driving game to find it.
           */}
-          <CommandGroup heading="Detours">
-            <CommandItem onSelect={() => go('/drive')} value="drive car game 3d physics play explore town">
-              <Car /> Take the car out
+          <CommandGroup heading={common.footer.detours}>
+            <CommandItem onSelect={() => go('/drive')} {...searchTerms('drive')}>
+              <Car /> {pageLabel('/drive')}
             </CommandItem>
-            <CommandItem onSelect={() => go('/pitch')} value="pitch hard sell slider hire me joke">
-              <Megaphone /> The pitch
+            <CommandItem onSelect={() => go('/pitch')} {...searchTerms('pitch')}>
+              <Megaphone /> {pageLabel('/pitch')}
             </CommandItem>
           </CommandGroup>
 
           {projects.length ? (
             <>
               <CommandSeparator />
-              <CommandGroup heading="Case studies">
+              <CommandGroup heading={t.groups.caseStudies}>
                 {projects.map((project) => (
                   <CommandItem
                     key={project.slug}
                     value={`${project.title} ${project.subtitle}`}
+                    keywords={project.keywords}
                     onSelect={() => go(`/work/${project.slug}`)}
                   >
                     <Braces />
@@ -177,11 +212,12 @@ export function CommandPalette({ projects, posts }: CommandPaletteProps) {
           {posts.length ? (
             <>
               <CommandSeparator />
-              <CommandGroup heading="Writing">
+              <CommandGroup heading={t.groups.writing}>
                 {posts.map((post) => (
                   <CommandItem
                     key={post.slug}
                     value={`${post.title} ${post.subtitle}`}
+                    keywords={post.keywords}
                     onSelect={() => go(`/blog/${post.slug}`)}
                   >
                     <BookOpen />
@@ -196,42 +232,46 @@ export function CommandPalette({ projects, posts }: CommandPaletteProps) {
           ) : null}
 
           <CommandSeparator />
-          <CommandGroup heading="Actions">
-            <CommandItem onSelect={copyEmail} value="copy email address contact">
+          <CommandGroup heading={t.groups.actions}>
+            <CommandItem onSelect={copyEmail} {...searchTerms('copyEmail')}>
               {copied ? <Check className="text-lime" /> : <Copy />}
-              Copy email
+              {t.copyEmail}
               <CommandShortcut className="font-mono">{profile.email}</CommandShortcut>
             </CommandItem>
             <CommandItem
               onSelect={() => run(() => window.open(profile.resume, '_blank'))}
-              value="resume cv download pdf"
+              {...searchTerms('resume')}
             >
-              <Download /> Download résumé
+              <Download /> {t.downloadResume}
             </CommandItem>
-            <CommandItem onSelect={() => openExternal('/blog/rss.xml')} value="rss feed subscribe">
-              <Rss /> RSS feed
+            {/* Each language has its own feed, so this opens the one being read. */}
+            <CommandItem
+              onSelect={() => openExternal(localize('/blog/rss.xml'))}
+              {...searchTerms('rss')}
+            >
+              <Rss /> {t.rssFeed}
             </CommandItem>
           </CommandGroup>
 
           <CommandSeparator />
-          <CommandGroup heading="Elsewhere">
+          <CommandGroup heading={common.footer.elsewhere}>
             <CommandItem
               onSelect={() => openExternal('https://github.com/Richie280907')}
-              value="github code repos source"
+              {...searchTerms('github')}
             >
               <Code2 /> GitHub <ArrowUpRight className="ml-auto size-3 opacity-50" />
             </CommandItem>
             <CommandItem
               onSelect={() => openExternal('https://www.linkedin.com/in/richiekoh2809/')}
-              value="linkedin profile professional"
+              {...searchTerms('linkedin')}
             >
               <Briefcase /> LinkedIn <ArrowUpRight className="ml-auto size-3 opacity-50" />
             </CommandItem>
             <CommandItem
               onSelect={() => run(() => { window.location.href = `mailto:${profile.email}`; })}
-              value="email mail write message"
+              {...searchTerms('sendEmail')}
             >
-              <Mail /> Send an email <ArrowUpRight className="ml-auto size-3 opacity-50" />
+              <Mail /> {t.sendEmail} <ArrowUpRight className="ml-auto size-3 opacity-50" />
             </CommandItem>
           </CommandGroup>
         </CommandList>

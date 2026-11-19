@@ -11,6 +11,8 @@ import {
   type ReactNode,
 } from 'react';
 import { MUSIC_VOLUME, SFX_VOLUME, playlist } from '@/content/audio';
+import { chromeDict } from '@/i18n/dictionaries/chrome';
+import { useT } from '@/i18n/LocaleProvider';
 import { soundEngine, type SoundName } from '@/lib/audio/SoundEngine';
 import { toast } from 'sonner';
 
@@ -47,6 +49,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const [musicPlaying, setMusicPlaying] = useState(false);
   const [trackIndex, setTrackIndex] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const t = useT(chromeDict).audio;
 
   const hasMusic = playlist.length > 0;
 
@@ -135,14 +138,12 @@ export function AudioProvider({ children }: { children: ReactNode }) {
           Power Mode rejects play() even inside a real tap. Say so rather than
           leaving a button that visibly does nothing.
         */
-        toast.error('Playback was blocked', {
-          description: 'Your browser refused to start audio. Low Power Mode on iOS is the usual cause.',
-        });
+        toast.error(t.blocked, { description: t.blockedDetail });
       });
     } else {
       audio.pause();
     }
-  }, [hasMusic]);
+  }, [hasMusic, t]);
 
   const nextTrack = useCallback(() => {
     if (playlist.length < 2) return;

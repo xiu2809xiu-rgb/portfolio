@@ -25,9 +25,8 @@ import * as THREE from 'three';
 export type QualityId = 'high' | 'balanced' | 'safe';
 
 export interface Quality {
+  /** Also the key its name and one-line description are filed under in `driveDict`. */
   readonly id: QualityId;
-  readonly name: string;
-  readonly blurb: string;
   /** Upper bound on device pixel ratio. */
   readonly dpr: number;
   /** Post-processing chain. When false the renderer tone maps instead. */
@@ -56,8 +55,6 @@ export interface Quality {
 export const QUALITIES: readonly Quality[] = [
   {
     id: 'high',
-    name: 'High',
-    blurb: 'Soft shadows, bloom, full resolution. Wants a discrete GPU.',
     dpr: 1.75,
     post: true,
     shadows: true,
@@ -71,8 +68,6 @@ export const QUALITIES: readonly Quality[] = [
   },
   {
     id: 'balanced',
-    name: 'Balanced',
-    blurb: 'Soft shadows at half the resolution. The default.',
     dpr: 1.35,
     post: true,
     shadows: true,
@@ -86,8 +81,6 @@ export const QUALITIES: readonly Quality[] = [
   },
   {
     id: 'safe',
-    name: 'Safe',
-    blurb: 'No post-processing, hard shadows. For laptops and older GPUs.',
     dpr: 1,
     post: false,
     shadows: true,

@@ -5,7 +5,16 @@ import { AnimatePresence, motion } from 'motion/react';
 import { Check } from 'lucide-react';
 import { BrandParticleText } from '@/components/common/BrandParticleText';
 import { profile } from '@/content/profile';
+import { rebootContent } from '@/content/localized/reboot';
+/*
+  The schedule is read from the English list and the words from the reader's
+  language. The Chinese list is laid over the English one line for line, so the
+  timings are the same object either way — and reading them from a fixed import
+  keeps the scheduling effect from depending on anything that could change.
+*/
 import { rebootSteps } from '@/content/reboot';
+import { chromeDict } from '@/i18n/dictionaries/chrome';
+import { useT } from '@/i18n/LocaleProvider';
 import { soundEngine } from '@/lib/audio/SoundEngine';
 import { useStillness } from '@/lib/use-stillness';
 
@@ -34,6 +43,8 @@ interface RebootSequenceProps {
  * starts fresh without needing to be reset on close.
  */
 export function RebootSequence({ open, onClose, soundEnabled }: RebootSequenceProps) {
+  const t = useT(chromeDict).reboot;
+  const { rebootSteps: lines } = useT(rebootContent);
   const reduced = useStillness();
   const [step, setStep] = useState(-1);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -119,7 +130,7 @@ export function RebootSequence({ open, onClose, soundEnabled }: RebootSequencePr
           key="reboot"
           role="dialog"
           aria-modal="true"
-          aria-label="Rebuilding the site"
+          aria-label={t.label}
           onClick={onClose}
           className="fixed inset-0 z-[400] flex cursor-pointer flex-col items-center justify-center overflow-hidden bg-[#05070a]"
           initial={{ opacity: 0 }}
@@ -181,7 +192,7 @@ export function RebootSequence({ open, onClose, soundEnabled }: RebootSequencePr
 
             {/* Streaming log */}
             <ul className="mt-7 w-full max-w-md space-y-1.5 font-mono text-[0.7rem] sm:text-xs">
-              {rebootSteps.map((entry, index) => {
+              {lines.map((entry, index) => {
                 const done = index <= effectiveStep;
                 return (
                   <motion.li
@@ -204,7 +215,7 @@ export function RebootSequence({ open, onClose, soundEnabled }: RebootSequencePr
             </ul>
 
             <p className="mt-8 font-mono text-[0.6rem] uppercase tracking-[0.28em] text-muted-foreground">
-              Click anywhere to skip
+              {t.skip}
             </p>
           </div>
         </motion.div>

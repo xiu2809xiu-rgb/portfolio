@@ -3,6 +3,8 @@
 import Image from 'next/image';
 import { Link } from '@/i18n/Link';
 import { HoloCard, HoloLayer } from '@/components/common/HoloCard';
+import { sectionsDict } from '@/i18n/dictionaries/sections';
+import { useT } from '@/i18n/LocaleProvider';
 
 /**
  * The 1st-place card.
@@ -56,10 +58,11 @@ const HEAD_BOX = `absolute ${BOX.inset} ${BOX.headTop}`;
 const BODY_BOX = `absolute ${BOX.inset} ${BOX.bodyTop} ${BOX.bodyBottom}`;
 
 export function AwardCard() {
+  const t = useT(sectionsDict).awardCard;
   return (
     <HoloCard
       className="mx-auto w-full max-w-[22rem]"
-      flipLabel="Turn it over"
+      flipLabel={t.flip}
       front={<Front />}
       back={<Back />}
     />
@@ -74,6 +77,7 @@ function Face({ children }: { children: React.ReactNode }) {
 }
 
 function Front() {
+  const t = useT(sectionsDict).awardCard;
   return (
     <Face>
       {/* ── Base plate ── */}
@@ -92,7 +96,7 @@ function Front() {
         <div className={`${ART_BOX} overflow-hidden rounded-lg border border-white/15 bg-black`}>
           <Image
             src={ART}
-            alt="The SmartRecap application"
+            alt={t.artAlt}
             fill
             sizes="352px"
             className="object-cover object-top"
@@ -111,40 +115,32 @@ function Front() {
         <div className={`${HEAD_BOX} flex items-start justify-between gap-2`}>
           <div>
             <p className="font-mono text-[0.52rem] font-bold uppercase tracking-[0.24em] text-lime">
-              1st place
+              {t.placing}
             </p>
             <h3 className="mt-1 font-heading text-[1.6rem] font-black leading-none tracking-tight text-white">
               SmartRecap
             </h3>
           </div>
           <span className="mt-0.5 shrink-0 rounded-full border border-lime/40 bg-lime/10 px-2 py-0.5 font-mono text-[0.5rem] font-bold uppercase tracking-[0.14em] text-lime">
-            Holo
+            {t.rarity}
           </span>
         </div>
 
         <div className={`${BODY_BOX} flex flex-col`}>
           <p className="font-mono text-[0.5rem] uppercase tracking-[0.18em] text-white/45">
-            Nanyang Polytechnic × AWS · 2026
+            {t.set}
           </p>
 
           {/* flex-1 rather than a footer pushed down with mt-auto: the leftover
               height belongs between the rows, not below them. */}
           <dl className="flex flex-1 flex-col justify-center gap-[5%]">
-            <Move
-              name="Frontend, in full"
-              cost="25 components"
-              body="Every page component in the product, built in a single overnight sitting."
-            />
-            <Move
-              name="Team Stay Grounded"
-              cost="PS1"
-              body="Problem Statement 1 — Automated Class Recap Generator."
-            />
+            <Move {...t.frontend} />
+            <Move {...t.team} />
           </dl>
 
           <div className="flex items-end justify-between border-t border-white/10 pt-[4%] font-mono text-[0.47rem] uppercase tracking-[0.16em] text-white/35">
-            <span>Holo · 001/001</span>
-            <span>Illus. Richie Koh</span>
+            <span>{t.serial}</span>
+            <span>{t.credit('Richie Koh')}</span>
           </div>
         </div>
       </HoloLayer>
@@ -173,6 +169,7 @@ function Move({ name, cost, body }: { name: string; cost: string; body: string }
 }
 
 function Back() {
+  const t = useT(sectionsDict).awardCard.back;
   return (
     <Face>
       <HoloLayer className="absolute inset-0">
@@ -199,18 +196,18 @@ function Back() {
             richiekoh.dev
           </p>
           <p className="mt-4 text-[0.72rem] leading-relaxed text-white/60">
-            The full write-up — what the problem was, what I built, and what it cost.
+            {t.blurb}
           </p>
 
           <Link
             href="/work/smartrecap"
             className="mt-5 rounded-full bg-lime px-5 py-2 font-mono text-[0.55rem] font-bold uppercase tracking-[0.16em] text-black transition-transform hover:-translate-y-0.5"
           >
-            Read the case study
+            {t.cta}
           </Link>
 
           <p className="absolute inset-x-0 bottom-[8%] font-mono text-[0.45rem] uppercase tracking-[0.16em] text-white/25">
-            Not a real trading card
+            {t.disclaimer}
           </p>
         </div>
       </HoloLayer>

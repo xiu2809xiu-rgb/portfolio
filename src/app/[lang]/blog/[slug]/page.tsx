@@ -4,12 +4,12 @@ import { notFound } from 'next/navigation';
 import { ArrowLeft, Clock } from 'lucide-react';
 import { MdxContent } from '@/components/blog/MdxContent';
 import { profile } from '@/content/profile';
+import { htmlLang, localizePath, ogLocale } from '@/i18n/config';
+import { blogDict } from '@/i18n/dictionaries/blog';
+import { commonDict } from '@/i18n/dictionaries/common';
+import { getLocale, localizedAlternates, notFoundMetadata } from '@/i18n/server';
 import { formatPostDate, getPost, getPosts } from '@/lib/blog';
 import { absoluteUrl } from '@/lib/site';
-
-interface PageProps {
-  params: Promise<{ slug: string }>;
-}
 
 /*
   Every slug is known at build time, so each page is prerendered. An unknown
@@ -20,25 +20,41 @@ interface PageProps {
   `[lang]/not-found.tsx` instead — the site's own 404, in the reader's language.
 */
 
+/* Slugs are shared between languages, so the English list names every page. */
 export async function generateStaticParams() {
   const posts = await getPosts();
   return posts.map((post) => ({ slug: post.slug }));
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: PageProps<'/[lang]/blog/[slug]'>): Promise<Metadata> {
   const { slug } = await params;
-  const post = await getPost(slug);
-  if (!post) return { title: 'Not found' };
+  const locale = await getLocale();
+  const post = await getPost(slug, locale);
+  if (!post) return notFoundMetadata(locale);
+
+  const path = `/blog/${post.slug}`;
+  /*
+    A post that has not been translated yet is the English article at a second
+    address. Its canonical is the English URL, and it claims no Chinese
+    alternate — announcing the English text as the Chinese version would tell
+    search engines there is a translation when there is not.
+  */
+  const translated = post.language === locale;
 
   return {
     title: post.title,
     description: post.description,
-    alternates: { canonical: `/blog/${post.slug}` },
+    alternates: translated
+      ? localizedAlternates(locale, path)
+      : { canonical: localizePath(post.language, path) },
     openGraph: {
       type: 'article',
       title: post.title,
       description: post.description,
-      url: absoluteUrl(`/blog/${post.slug}`),
+      url: absoluteUrl(localizePath(post.language, path)),
+      locale: ogLocale[post.language],
       publishedTime: post.date,
       authors: [profile.legalName],
       tags: post.tags,
@@ -46,15 +62,25 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export default async function PostPage({ params }: PageProps) {
+export default async function PostPage({ params }: PageProps<'/[lang]/blog/[slug]'>) {
   const { slug } = await params;
-  const post = await getPost(slug);
+  const locale = await getLocale();
+  const post = await getPost(slug, locale);
   if (!post) notFound();
 
-  const all = await getPosts();
+  const t = blogDict[locale];
+  const all = await getPosts(locale);
   const index = all.findIndex((entry) => entry.slug === post.slug);
   const next = index > 0 ? all[index - 1] : null;
   const previous = index >= 0 && index < all.length - 1 ? all[index + 1] : null;
+
+  /*
+    Set on the article's own text when it is not in the page's language, so a
+    screen reader switches voice and the browser hyphenates and shapes it as the
+    language it actually is. The chrome around it stays in the reader's language.
+  */
+  const original = post.language === locale ? undefined : htmlLang[post.language];
+  const path = `/blog/${post.slug}`;
 
   const articleSchema = {
     '@context': 'https://schema.org',
@@ -62,9 +88,10 @@ export default async function PostPage({ params }: PageProps) {
     headline: post.title,
     description: post.description,
     datePublished: post.date,
+    inLanguage: htmlLang[post.language],
     author: { '@type': 'Person', name: profile.legalName, url: absoluteUrl('/') },
     keywords: post.tags.join(', '),
-    mainEntityOfPage: absoluteUrl(`/blog/${post.slug}`),
+    mainEntityOfPage: absoluteUrl(localizePath(post.language, path)),
   };
 
   return (
@@ -80,23 +107,26 @@ export default async function PostPage({ params }: PageProps) {
           className="group inline-flex items-center gap-2 font-mono text-xs uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeft className="size-4 transition-transform group-hover:-translate-x-0.5" />
-          All writing
+          {t.post.allWriting}
         </Link>
 
         <header className="mt-8">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[0.65rem] uppercase tracking-widest text-muted-foreground">
-            <time dateTime={post.date}>{formatPostDate(post.date)}</time>
+            <time dateTime={post.date}>{formatPostDate(post.date, locale)}</time>
             <span className="flex items-center gap-1">
               <Clock className="size-3" />
-              {post.readingMinutes} min read
+              {t.readingTime(post.readingMinutes)}
             </span>
           </div>
 
-          <h1 className="mt-4 font-heading text-[clamp(2rem,5.5vw,3.25rem)] font-extrabold leading-[1.06] tracking-[-0.03em]">
+          <h1
+            lang={original}
+            className="mt-4 font-heading text-[clamp(2rem,5.5vw,3.25rem)] font-extrabold leading-[1.06] tracking-[-0.03em]"
+          >
             {post.title}
           </h1>
 
-          <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
+          <p lang={original} className="mt-4 text-lg leading-relaxed text-muted-foreground">
             {post.description}
           </p>
 
@@ -112,7 +142,13 @@ export default async function PostPage({ params }: PageProps) {
           </ul>
         </header>
 
-        <div className="mt-2 text-base">
+        {original ? (
+          <p className="mt-8 rounded-xl border border-hairline bg-white/[0.03] px-4 py-3 text-sm text-muted-foreground">
+            {t.untranslated.notice}
+          </p>
+        ) : null}
+
+        <div lang={original} className="mt-2 text-base">
           <MdxContent source={post.content} />
         </div>
 
@@ -122,7 +158,7 @@ export default async function PostPage({ params }: PageProps) {
               href={`/blog/${previous.slug}`}
               className="glass glass-hover rounded-2xl p-5"
             >
-              <p className="eyebrow">Previous</p>
+              <p className="eyebrow">{t.post.previous}</p>
               <p className="mt-2 font-heading text-sm font-bold leading-snug">
                 {previous.title}
               </p>
@@ -136,21 +172,19 @@ export default async function PostPage({ params }: PageProps) {
               href={`/blog/${next.slug}`}
               className="glass glass-hover rounded-2xl p-5 sm:text-right"
             >
-              <p className="eyebrow">Next</p>
+              <p className="eyebrow">{t.post.next}</p>
               <p className="mt-2 font-heading text-sm font-bold leading-snug">{next.title}</p>
             </Link>
           ) : null}
         </nav>
 
         <div className="mt-10 rounded-2xl border border-lime/25 bg-lime/[0.06] p-6 text-center">
-          <p className="text-sm text-muted-foreground">
-            Working on something similar, or want to talk it through?
-          </p>
+          <p className="text-sm text-muted-foreground">{t.post.cta}</p>
           <Link
             href="/book"
             className="mt-4 inline-flex items-center gap-2 rounded-full bg-lime px-5 py-2.5 font-mono text-xs uppercase tracking-widest text-black transition-transform hover:scale-[1.03]"
           >
-            Book a session
+            {commonDict[locale].header.bookSession}
           </Link>
         </div>
       </div>

@@ -1,12 +1,18 @@
 import { Reveal } from '@/components/common/Reveal';
 import { SectionHeading } from '@/components/common/SectionHeading';
-import { experience } from '@/content/resume';
+import { resumeContent } from '@/content/localized/resume';
+import { sectionsDict } from '@/i18n/dictionaries/sections';
+import { getLocale } from '@/i18n/server';
 
-export function ExperienceSection() {
+export async function ExperienceSection() {
+  const locale = await getLocale();
+  const t = sectionsDict[locale].experience;
+  const { experience } = resumeContent[locale];
+
   return (
     <section id="experience" className="scroll-mt-24 py-20 md:py-28">
       <div className="wrap">
-        <SectionHeading index="04" title="Experience" />
+        <SectionHeading index="04" title={t.title} />
 
         <ol className="relative">
           {experience.map((entry, index) => (

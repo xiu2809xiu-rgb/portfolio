@@ -1,6 +1,6 @@
 import type { UsesCategory } from './types';
 
-export const usesIntro =
+export const usesIntro: string =
   'The tools I actually open every day — not an aspirational list. Updated whenever something earns or loses its place.';
 
 export const usesCategories: readonly UsesCategory[] = [

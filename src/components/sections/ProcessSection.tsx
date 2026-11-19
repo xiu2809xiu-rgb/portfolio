@@ -2,7 +2,9 @@
 
 import dynamic from 'next/dynamic';
 import { SectionHeading } from '@/components/common/SectionHeading';
-import { processSteps } from '@/content/resume';
+import { resumeContent } from '@/content/localized/resume';
+import { sectionsDict } from '@/i18n/dictionaries/sections';
+import { useT } from '@/i18n/LocaleProvider';
 
 const ScrollStack = dynamic(
   () => import('@/components/react-bits/scroll-stack').then((mod) => mod.ScrollStack),
@@ -22,14 +24,13 @@ const ScrollStack = dynamic(
  * leaves most of the card empty, which read as a bug rather than a layout.
  */
 export function ProcessSection() {
+  const t = useT(sectionsDict).process;
+  const { processSteps } = useT(resumeContent);
+
   return (
     <section id="process" className="scroll-mt-24 pt-20 md:pt-28">
       <div className="wrap">
-        <SectionHeading
-          index="05"
-          title="How I work"
-          description="Not a framework I can recite — the actual order things happen in, with a real instance under each step."
-        />
+        <SectionHeading index="05" title={t.title} description={t.description} />
       </div>
 
       <ScrollStack
@@ -45,6 +46,7 @@ export function ProcessSection() {
         perspective={1600}
         showProgress
         showCounter
+        ariaLabel={t.stackLabel}
       >
         {processSteps.map((step) => (
           <article
@@ -53,7 +55,7 @@ export function ProcessSection() {
           >
             <header className="flex items-start justify-between gap-6">
               <span className="font-mono text-[0.65rem] uppercase tracking-[0.2em] text-lime">
-                Step {step.index}
+                {t.step(step.index)}
               </span>
               <span className="text-4xl sm:text-5xl" aria-hidden>
                 {step.icon}

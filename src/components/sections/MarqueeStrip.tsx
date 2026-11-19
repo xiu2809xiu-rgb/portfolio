@@ -1,7 +1,8 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { marqueeTerms } from '@/content/profile';
+import { profileContent } from '@/content/localized/profile';
+import { useT } from '@/i18n/LocaleProvider';
 
 const BendingMarquee = dynamic(() => import('@/components/react-bits/bending-marquee'), {
   ssr: false,
@@ -15,6 +16,8 @@ const BendingMarquee = dynamic(() => import('@/components/react-bits/bending-mar
  * so this is hidden from assistive tech rather than read as a wall of nouns.
  */
 export function MarqueeStrip() {
+  const { marqueeTerms } = useT(profileContent);
+
   return (
     <div
       className="relative border-y border-hairline bg-white/[0.015] py-2"

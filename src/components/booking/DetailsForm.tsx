@@ -6,6 +6,8 @@ import { ArrowLeft, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { bookingDict } from '@/i18n/dictionaries/booking';
+import { useT } from '@/i18n/LocaleProvider';
 import { cn } from '@/lib/utils';
 import type { AvailabilitySlot } from './types';
 
@@ -29,13 +31,6 @@ interface DetailsFormProps {
   onSubmit: (details: BookingDetails) => void;
 }
 
-const TOPIC_SUGGESTIONS = [
-  'Internship opportunity',
-  'Project collaboration',
-  'Code review',
-  'Just a chat',
-];
-
 export function DetailsForm({
   slot,
   durationMinutes,
@@ -47,6 +42,7 @@ export function DetailsForm({
   onBack,
   onSubmit,
 }: DetailsFormProps) {
+  const { details: t, format } = useT(bookingDict);
   const [details, setDetails] = useState<BookingDetails>({
     name: '',
     email: '',
@@ -64,32 +60,34 @@ export function DetailsForm({
   };
 
   const start = DateTime.fromISO(slot.start);
-  const ownerLabel = start.setZone(ownerTimezone).setLocale('en-US').toFormat("cccc d LLLL 'at' h:mm a");
-  const viewerLabel = start.setZone(viewerTimezone).setLocale('en-US').toFormat("cccc d LLLL 'at' h:mm a");
+  const ownerLabel = format.dateTime(start.setZone(ownerTimezone));
+  const viewerLabel = format.dateTime(start.setZone(viewerTimezone));
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5" noValidate>
       <div className="rounded-xl border border-lime/25 bg-lime/[0.07] p-4">
         <p className="font-mono text-[0.65rem] uppercase tracking-widest text-lime">
-          {durationMinutes} minute session
+          {t.sessionLength(durationMinutes)}
         </p>
         <p className="mt-1.5 font-heading text-base font-semibold">{ownerLabel}</p>
         <p className="mt-0.5 font-mono text-xs text-muted-foreground">
-          {ownerTimezone.split('/')[1]?.replace('_', ' ') ?? ownerTimezone} time
-          {viewerTimezone !== ownerTimezone ? ` · ${viewerLabel} your time` : ''}
+          {t.zoneLine(
+            format.zoneShort(ownerTimezone),
+            viewerTimezone !== ownerTimezone ? viewerLabel : null,
+          )}
         </p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="booking-name">
-            Name <span className="text-lime">*</span>
+            {t.nameLabel} <span className="text-lime">*</span>
           </Label>
           <Input
             id="booking-name"
             value={details.name}
             onChange={(event) => update('name', event.target.value)}
-            placeholder="Jamie Tan"
+            placeholder={t.namePlaceholder}
             autoComplete="name"
             required
             aria-invalid={Boolean(fieldErrors.name)}
@@ -104,14 +102,14 @@ export function DetailsForm({
 
         <div className="space-y-2">
           <Label htmlFor="booking-email">
-            Email <span className="text-lime">*</span>
+            {t.emailLabel} <span className="text-lime">*</span>
           </Label>
           <Input
             id="booking-email"
             type="email"
             value={details.email}
             onChange={(event) => update('email', event.target.value)}
-            placeholder="jamie@company.com"
+            placeholder={t.emailPlaceholder}
             autoComplete="email"
             required
             aria-invalid={Boolean(fieldErrors.email)}
@@ -126,16 +124,16 @@ export function DetailsForm({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="booking-topic">What is it about?</Label>
+        <Label htmlFor="booking-topic">{t.topicLabel}</Label>
         <Input
           id="booking-topic"
           value={details.topic}
           onChange={(event) => update('topic', event.target.value)}
-          placeholder="Internship opportunity"
+          placeholder={t.topicPlaceholder}
           maxLength={120}
         />
         <div className="flex flex-wrap gap-1.5 pt-1">
-          {TOPIC_SUGGESTIONS.map((suggestion) => (
+          {t.topics.map((suggestion) => (
             <button
               key={suggestion}
               type="button"
@@ -154,14 +152,14 @@ export function DetailsForm({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="booking-note">Anything I should read first?</Label>
+        <Label htmlFor="booking-note">{t.noteLabel}</Label>
         <textarea
           id="booking-note"
           value={details.note}
           onChange={(event) => update('note', event.target.value)}
           rows={4}
           maxLength={800}
-          placeholder="A link, some context, or a question you want answered."
+          placeholder={t.notePlaceholder}
           className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
         />
         <p className="text-right font-mono text-[0.62rem] text-muted-foreground">
@@ -171,7 +169,7 @@ export function DetailsForm({
 
       {/* Honeypot — visually and semantically hidden from real users. */}
       <div aria-hidden className="absolute left-[-9999px] top-0 size-px overflow-hidden">
-        <label htmlFor="booking-company">Company (leave blank)</label>
+        <label htmlFor="booking-company">{t.honeypot}</label>
         <input
           id="booking-company"
           type="text"
@@ -200,7 +198,7 @@ export function DetailsForm({
           className="gap-1.5"
         >
           <ArrowLeft className="size-4" />
-          Change time
+          {t.back}
         </Button>
 
         <Button
@@ -211,18 +209,15 @@ export function DetailsForm({
           {submitting ? (
             <>
               <Loader2 className="size-4 animate-spin" />
-              Confirming…
+              {t.submitting}
             </>
           ) : (
-            'Confirm booking'
+            t.submit
           )}
         </Button>
       </div>
 
-      <p className="text-xs leading-relaxed text-muted-foreground">
-        Your details are used to create the calendar invite and nothing else. No list, no
-        newsletter, no third parties.
-      </p>
+      <p className="text-xs leading-relaxed text-muted-foreground">{t.privacy}</p>
     </form>
   );
 }

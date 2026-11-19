@@ -7,10 +7,12 @@ import { makeClock, type DayNight } from '@/components/drive/useDayNight';
 import { EngineAudio } from '@/components/drive/engine-audio';
 import { Hud } from '@/components/drive/Hud';
 import { SceneBoundary } from '@/components/drive/SceneBoundary';
-import { DEFAULT_VEHICLE, vehicleById, vehicles } from '@/content/drive-vehicles';
+import { DEFAULT_VEHICLE, vehicleById } from '@/content/drive-vehicles';
+import { driveVehiclesContent } from '@/content/localized/drive-vehicles';
+import { driveDict } from '@/i18n/dictionaries/drive';
+import { useT } from '@/i18n/LocaleProvider';
 import {
   QUALITIES,
-  qualityById,
   setQuality,
   stepDown,
   useQuality,
@@ -36,6 +38,7 @@ const DriveScene = dynamic(
 );
 
 export function DriveClient() {
+  const t = useT(driveDict);
   const reduced = useStillness();
   const [started, setStarted] = useState(false);
   const [vehicleId, setVehicleId] = useState<string>(DEFAULT_VEHICLE);
@@ -148,7 +151,7 @@ export function DriveClient() {
             key={sceneKey}
             fallback={(reset) => (
               <ContextLostPanel
-                qualityName={qualityById(qualityId).name}
+                qualityName={t.quality[qualityId].name}
                 onRestart={() => {
                   reset();
                   restart();
@@ -168,7 +171,7 @@ export function DriveClient() {
           </SceneBoundary>
           {lost ? null : <Hud handle={handle} clockRef={clockRef} zoneRef={zoneRef} />}
           {lost ? (
-            <ContextLostPanel qualityName={qualityById(qualityId).name} onRestart={restart} />
+            <ContextLostPanel qualityName={t.quality[qualityId].name} onRestart={restart} />
           ) : null}
         </>
       ) : (
@@ -189,7 +192,7 @@ export function DriveClient() {
         className="absolute left-5 top-5 z-20 inline-flex items-center gap-2 rounded-full border border-white/12 bg-black/45 px-4 py-2 font-mono text-[0.62rem] uppercase tracking-[0.2em] text-white/70 backdrop-blur transition-colors hover:border-lime/50 hover:text-white"
       >
         <ArrowLeft className="size-3.5" />
-        Back to the site
+        {t.backToSite}
       </Link>
 
       {started ? (
@@ -200,7 +203,7 @@ export function DriveClient() {
           className="absolute left-5 top-[4.6rem] z-20 inline-flex items-center gap-2 rounded-full border border-white/12 bg-black/45 px-4 py-2 font-mono text-[0.62rem] uppercase tracking-[0.2em] text-white/70 backdrop-blur transition-colors hover:border-lime/50 hover:text-white"
         >
           {soundOn ? <Volume2 className="size-3.5" /> : <VolumeX className="size-3.5" />}
-          {soundOn ? 'Sound on' : 'Muted'}
+          {soundOn ? t.sound.on : t.sound.muted}
         </button>
       ) : null}
     </div>
@@ -231,7 +234,18 @@ function StartCard({
   qualityId: QualityId;
   onPickQuality: (id: QualityId) => void;
 }) {
+  const t = useT(driveDict);
+  /* The picker's words in the reader's language; the car itself is the same either way. */
+  const { vehicles } = useT(driveVehiclesContent);
   const chosen = vehicles.find((v) => v.id === vehicleId) ?? vehicles[0];
+  const controls = [
+    ['W A S D', t.controls.drive],
+    [t.controls.space, t.controls.handbrake],
+    ['H', t.controls.horn],
+    ['V', t.controls.changeView],
+    ['E', t.controls.openProject],
+    ['R', t.controls.reset],
+  ];
 
   return (
     <div className="grid h-full place-items-center overflow-y-auto px-6 py-24">
@@ -240,17 +254,18 @@ function StartCard({
           ~/richie/drive
         </p>
         <h1 className="mt-4 font-heading text-4xl font-extrabold tracking-tight sm:text-5xl">
-          Take the <span className="text-gradient-lime">car</span> out
+          {t.startCard.title((word) => (
+            <span className="text-gradient-lime">{word}</span>
+          ))}
         </h1>
         <p className="mx-auto mt-4 max-w-sm text-sm leading-relaxed text-muted-foreground">
-          A town with a ring road, a real day and night cycle, and my work behind six gates. Nothing
-          here is on the critical path of the portfolio — it loads only if you ask.
+          {t.startCard.lede}
         </p>
 
         {/* ── Body ── */}
         <fieldset className="mt-9 text-left">
           <legend className="mb-3 w-full text-center font-mono text-[0.58rem] uppercase tracking-[0.25em] text-muted-foreground">
-            Pick a body
+            {t.startCard.pickBody}
           </legend>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {vehicles.map((vehicle) => {
@@ -286,14 +301,14 @@ function StartCard({
             {chosen.character}
           </p>
           <p className="mt-2 text-center font-mono text-[0.55rem] uppercase tracking-[0.16em] text-muted-foreground/70">
-            Each one has its own pace, brakes and engine note
+            {t.startCard.eachDiffers}
           </p>
         </fieldset>
 
         {/* ── Graphics ── */}
         <fieldset className="mt-7 text-left">
           <legend className="mb-3 w-full text-center font-mono text-[0.58rem] uppercase tracking-[0.25em] text-muted-foreground">
-            Graphics
+            {t.startCard.graphics}
           </legend>
           <div className="grid grid-cols-3 gap-2">
             {QUALITIES.map((q) => {
@@ -311,13 +326,13 @@ function StartCard({
                       : 'border-hairline text-muted-foreground hover:border-lime/30',
                   )}
                 >
-                  {q.name}
+                  {t.quality[q.id].name}
                 </button>
               );
             })}
           </div>
           <p className="mt-3 text-center text-xs leading-relaxed text-muted-foreground">
-            {QUALITIES.find((q) => q.id === qualityId)?.blurb}
+            {t.quality[qualityId].blurb}
           </p>
         </fieldset>
 
@@ -334,7 +349,7 @@ function StartCard({
           )}
         >
           {soundOn ? <Volume2 className="size-3.5" /> : <VolumeX className="size-3.5" />}
-          Engine sound {soundOn ? 'on' : 'off'}
+          {t.startCard.engineSound(soundOn)}
         </button>
 
         <div>
@@ -343,19 +358,12 @@ function StartCard({
             onClick={onStart}
             className="mt-6 inline-flex items-center gap-2 rounded-full bg-lime px-7 py-3.5 font-mono text-xs font-bold uppercase tracking-widest text-black transition-transform hover:-translate-y-0.5"
           >
-            Start engine
+            {t.startCard.start}
           </button>
         </div>
 
         <dl className="mx-auto mt-10 grid max-w-sm grid-cols-2 gap-x-6 gap-y-2 text-left font-mono text-[0.62rem] uppercase tracking-widest text-muted-foreground">
-          {[
-            ['W A S D', 'Drive'],
-            ['Space', 'Handbrake'],
-            ['H', 'Horn'],
-            ['V', 'Change view'],
-            ['E', 'Open a project'],
-            ['R', 'Reset'],
-          ].map(([key, action]) => (
+          {controls.map(([key, action]) => (
             <div key={key} className="contents">
               <dt className="text-foreground/80">{key}</dt>
               <dd>{action}</dd>
@@ -368,12 +376,13 @@ function StartCard({
 }
 
 function SceneLoading() {
+  const t = useT(driveDict);
   return (
     <div className="grid h-full place-items-center">
       <div className="text-center">
         <div className="mx-auto size-10 animate-spin rounded-full border-2 border-white/10 border-t-lime" />
         <p className="mt-5 font-mono text-[0.62rem] uppercase tracking-[0.25em] text-muted-foreground">
-          Warming the engine
+          {t.loading}
         </p>
       </div>
     </div>
@@ -388,18 +397,15 @@ function SceneLoading() {
  * back. The visitor can still choose to go in.
  */
 function ReducedMotionNotice() {
+  const t = useT(driveDict).reducedMotion;
   return (
     <div className="wrap grid min-h-[70vh] place-items-center pb-24 pt-32">
       <div className="max-w-md text-center">
         <p className="eyebrow">~/richie/drive</p>
         <h1 className="mt-4 font-heading text-3xl font-extrabold tracking-tight sm:text-4xl">
-          This one is all movement
+          {t.heading}
         </h1>
-        <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-          Your system asks for reduced motion, and a driving game is continuous camera movement by
-          definition — there is no calmer version of it worth shipping. Everything it links to lives
-          on the ordinary pages.
-        </p>
+        <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{t.body}</p>
         <Link
           href="/work"
           className={cn(
@@ -408,7 +414,7 @@ function ReducedMotionNotice() {
             'transition-colors hover:border-lime/50 hover:text-foreground',
           )}
         >
-          See the work instead
+          {t.seeWork}
         </Link>
       </div>
     </div>
@@ -431,20 +437,19 @@ function ContextLostPanel({
   qualityName: string;
   onRestart: () => void;
 }) {
+  const t = useT(driveDict);
   return (
     <div className="absolute inset-0 z-40 grid place-items-center bg-[#04060a] px-6">
       <div className="max-w-md text-center">
         <TriangleAlert className="mx-auto size-7 text-lime" />
         <h2 className="mt-5 font-heading text-2xl font-extrabold tracking-tight">
-          The graphics ran out of room
+          {t.contextLost.heading}
         </h2>
-        <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-          Your browser gave up the 3D context, which it does when the GPU is asked for more than it
-          has. Nothing is broken and nothing was lost — it just cannot carry on from here.
-        </p>
+        <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{t.contextLost.cause}</p>
         <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-          Graphics have been turned down to <span className="text-lime">{qualityName}</span>.
-          Starting again should hold.
+          {t.contextLost.turnedDown(qualityName, (tier) => (
+            <span className="text-lime">{tier}</span>
+          ))}
         </p>
         <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
           <button
@@ -452,13 +457,13 @@ function ContextLostPanel({
             onClick={onRestart}
             className="rounded-full bg-lime px-6 py-3 font-mono text-xs font-bold uppercase tracking-widest text-black transition-transform hover:-translate-y-0.5"
           >
-            Start again
+            {t.contextLost.restart}
           </button>
           <Link
             href="/"
             className="rounded-full border border-hairline px-6 py-3 font-mono text-xs uppercase tracking-widest text-muted-foreground transition-colors hover:border-lime/40 hover:text-foreground"
           >
-            Back to the site
+            {t.backToSite}
           </Link>
         </div>
       </div>

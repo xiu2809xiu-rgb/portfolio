@@ -3,7 +3,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from '@/i18n/Link';
 import { Navigation } from 'lucide-react';
-import { districts, type District } from '@/content/drive-world';
+import type { District } from '@/content/drive-world';
+import { driveWorldContent } from '@/content/localized/drive-world';
+import { driveDict } from '@/i18n/dictionaries/drive';
+import { useT } from '@/i18n/LocaleProvider';
 import type { CarHandle } from './Car';
 import type { ZoneState } from './Zones';
 import { clockLabel, DAY_LENGTH_SECONDS, START_AT, type DayNight } from './useDayNight';
@@ -32,6 +35,8 @@ export function Hud({
   clockRef: React.RefObject<DayNight>;
   zoneRef: React.RefObject<ZoneState>;
 }) {
+  const t = useT(driveDict);
+  const { districts } = useT(driveWorldContent);
   const speedRef = useRef<HTMLSpanElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
   const clockTextRef = useRef<HTMLSpanElement>(null);
@@ -43,6 +48,24 @@ export function Hud({
   const [done, setDone] = useState(0);
   const [scrubbing, setScrubbing] = useState(false);
   const seenVersion = useRef(-1);
+
+  /*
+    The zone state is written by the scene, which works from the English list —
+    that is where the geometry lives. Looking each district up again by id at
+    render time is what puts its name and blurb in the reader's language.
+  */
+  const inReadersLanguage = (district: District | null) =>
+    district ? (districts.find((entry) => entry.id === district.id) ?? district) : null;
+  const here = inReadersLanguage(zone);
+  const next = inReadersLanguage(target);
+  const controls = [
+    ['W A S D', t.controls.drive],
+    [t.controls.space, t.controls.handbrake],
+    ['H', t.controls.horn],
+    ['V', t.controls.changeView],
+    ['E', t.controls.openChapter],
+    ['R', t.controls.reset],
+  ];
 
   useEffect(() => {
     let frame = 0;
@@ -88,7 +111,7 @@ export function Hud({
       {/* ── Where to go next ── */}
       <div className="pointer-events-none absolute inset-x-0 top-5 z-20 flex justify-center">
         <div className="flex items-center gap-4 rounded-2xl border border-white/10 bg-black/50 px-5 py-3 backdrop-blur">
-          {target ? (
+          {next ? (
             <>
               <span
                 ref={needleRef}
@@ -99,10 +122,10 @@ export function Hud({
               </span>
               <span className="min-w-0">
                 <span className="block font-mono text-[0.55rem] uppercase tracking-[0.22em] text-white/45">
-                  Next · {done + 1} of {districts.length}
+                  {t.hud.next(done + 1, districts.length)}
                 </span>
                 <span className="block truncate font-heading text-sm font-bold tracking-tight text-white">
-                  {target.name}
+                  {next.name}
                 </span>
               </span>
               <span
@@ -115,10 +138,10 @@ export function Hud({
           ) : (
             <span className="text-center">
               <span className="block font-mono text-[0.55rem] uppercase tracking-[0.22em] text-lime">
-                All {districts.length} found
+                {t.hud.allFound(districts.length)}
               </span>
               <span className="mt-0.5 block font-heading text-sm font-bold tracking-tight text-white">
-                That is the whole CV. Drive around as long as you like.
+                {t.hud.wholeCv}
               </span>
             </span>
           )}
@@ -135,7 +158,7 @@ export function Hud({
             0
           </span>
           <span className="font-mono text-[0.62rem] uppercase tracking-[0.2em] text-white/50">
-            kph
+            {t.hud.speedUnit}
           </span>
         </div>
         <div className="mt-2 h-0.5 w-32 overflow-hidden rounded-full bg-white/15">
@@ -157,7 +180,7 @@ export function Hud({
             00:00
           </span>
           <span className="font-mono text-[0.55rem] uppercase tracking-[0.2em] text-white/40">
-            {Math.round(DAY_LENGTH_SECONDS / 60)} min day
+            {t.hud.dayLength(Math.round(DAY_LENGTH_SECONDS / 60))}
           </span>
         </div>
         {/*
@@ -173,7 +196,7 @@ export function Hud({
           /* The constant, not the live ref — reading a ref during render is
              exactly the thing the compiler is right to complain about. */
           defaultValue={START_AT}
-          aria-label="Time of day"
+          aria-label={t.hud.timeOfDay}
           onPointerDown={() => setScrubbing(true)}
           onChange={(event) => {
             if (clockRef.current) clockRef.current.scrub = Number(event.target.value);
@@ -188,7 +211,7 @@ export function Hud({
           className="pitch-range mt-2 w-full"
         />
         <p className="mt-1 font-mono text-[0.55rem] uppercase tracking-[0.18em] text-white/35">
-          {scrubbing ? 'Holding' : 'Running'}
+          {scrubbing ? t.hud.clockHolding : t.hud.clockRunning}
         </p>
       </div>
 
@@ -196,25 +219,25 @@ export function Hud({
       <div
         className={cn(
           'absolute inset-x-0 bottom-28 z-20 mx-auto w-[min(92vw,32rem)] rounded-2xl border p-5 backdrop-blur transition-all duration-300',
-          zone
+          here
             ? 'translate-y-0 border-lime/30 bg-black/65 opacity-100'
             : 'pointer-events-none translate-y-3 border-white/5 bg-black/0 opacity-0',
         )}
       >
-        {zone ? (
+        {here ? (
           <>
             <p className="font-mono text-[0.58rem] uppercase tracking-[0.25em] text-lime">
-              {zone.kicker}
+              {here.kicker}
             </p>
             <h2 className="mt-2 font-heading text-2xl font-extrabold tracking-tight text-white">
-              {zone.name}
+              {here.name}
             </h2>
-            <p className="mt-2 text-sm leading-relaxed text-white/70">{zone.blurb}</p>
+            <p className="mt-2 text-sm leading-relaxed text-white/70">{here.blurb}</p>
             <Link
-              href={zone.href}
+              href={here.href}
               className="mt-4 inline-flex items-center gap-2 rounded-full bg-lime px-5 py-2 font-mono text-[0.62rem] font-bold uppercase tracking-widest text-black"
             >
-              Press E to open
+              {t.hud.open}
             </Link>
           </>
         ) : null}
@@ -228,14 +251,7 @@ export function Hud({
         )}
       >
         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 font-mono text-[0.62rem] uppercase tracking-widest text-white/60">
-          {[
-            ['W A S D', 'Drive'],
-            ['Space', 'Handbrake'],
-            ['H', 'Horn'],
-            ['V', 'Change view'],
-            ['E', 'Open a chapter'],
-            ['R', 'Reset'],
-          ].map(([key, action]) => (
+          {controls.map(([key, action]) => (
             <div key={key} className="contents">
               <dt className="text-white/85">{key}</dt>
               <dd>{action}</dd>

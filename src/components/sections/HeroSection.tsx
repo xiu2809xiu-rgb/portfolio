@@ -6,7 +6,12 @@ import { ArrowRight, ArrowUpRight, Download } from 'lucide-react';
 import { motion } from 'motion/react';
 import { InViewMount } from '@/components/common/InViewMount';
 import StaggeredText from '@/components/react-bits/staggered-text';
-import { heroRotation, profile } from '@/content/profile';
+import { profileContent } from '@/content/localized/profile';
+import type { Locale } from '@/i18n/config';
+import { commonDict } from '@/i18n/dictionaries/common';
+import { homeDict } from '@/i18n/dictionaries/home';
+import { useLocale, useT } from '@/i18n/LocaleProvider';
+import { cn } from '@/lib/utils';
 import { RotatingWord } from './RotatingWord';
 
 /* Both are WebGL-heavy and useless during SSR, so they load on the client only. */
@@ -24,7 +29,67 @@ const AvatarStage = dynamic(
   },
 );
 
+interface HeroSetting {
+  /** Size, leading and tracking of the headline. */
+  headline: string;
+  /** How StaggeredText cuts each line into pieces for the entrance. */
+  segmentBy: 'words' | 'chars';
+  /** Added to each headline line. */
+  line: string;
+  /** The element that sets the hackathon apart in the sentence under the headline. */
+  accent: string;
+}
+
+/*
+  Where the two languages cannot share the hero's type.
+
+  Chinese runs a size smaller with more leading. Every character fills its whole
+  square, so at the English size a line overruns the column beside the avatar —
+  and, cut a character at a time, the overflow can strand a comma on a line of
+  its own — while at 0.95 the lines touch.
+
+  It enters a character at a time, having no spaces to split on, and its lines
+  are put back into ordinary text flow: StaggeredText lays a single line out as
+  a flex row, which would make every character a block of its own, read aloud
+  one at a time and copied one per line.
+
+  Its accent is colour alone. Chinese has no italic, and a Song face dropped into
+  a sans sentence reads as a font that failed to load rather than as emphasis.
+*/
+const SETTING: Record<Locale, HeroSetting> = {
+  en: {
+    headline: 'text-[clamp(2.5rem,9vw,5.5rem)] leading-[0.95] tracking-[-0.03em]',
+    segmentBy: 'words',
+    line: '',
+    accent: 'font-serif text-foreground',
+  },
+  zh: {
+    headline: 'text-[clamp(2.25rem,7.5vw,4.25rem)] leading-[1.15]',
+    segmentBy: 'chars',
+    line: 'block!',
+    accent: 'not-italic text-foreground',
+  },
+};
+
+/*
+  StaggeredText's `delay` for each line, first to last. It reads the value as
+  milliseconds between pieces, not as a start time — so these do not cascade the
+  lines, and every piece of a line arrives together in either language.
+*/
+const LINE_DELAYS = [0.25, 0.4, 0.55];
+
+/** The treatment `homeDict.hero.headline` describes: plain, outlined, then the gradient. */
+function lineTone(index: number, count: number): string {
+  if (index === count - 1) return 'block text-gradient-lime';
+  return index === 0 ? 'block' : 'text-stroke block';
+}
+
 export function HeroSection() {
+  const setting = SETTING[useLocale()];
+  const t = useT(homeDict).hero;
+  const { bookSession } = useT(commonDict).header;
+  const { profile, heroRotation } = useT(profileContent);
+
   return (
     <section
       id="hero"
@@ -67,37 +132,20 @@ export function HeroSection() {
             {profile.role} · {profile.location}
           </motion.p>
 
-          <h1 className="font-heading text-[clamp(2.5rem,9vw,5.5rem)] font-extrabold leading-[0.95] tracking-[-0.03em]">
-            <StaggeredText
-              text="Full-stack"
-              as="span"
-              className="block"
-              segmentBy="words"
-              delay={0.25}
-              duration={0.8}
-              direction="bottom"
-              blur
-            />
-            <StaggeredText
-              text="developer,"
-              as="span"
-              className="text-stroke block"
-              segmentBy="words"
-              delay={0.4}
-              duration={0.8}
-              direction="bottom"
-              blur
-            />
-            <StaggeredText
-              text="UX designer."
-              as="span"
-              className="block text-gradient-lime"
-              segmentBy="words"
-              delay={0.55}
-              duration={0.8}
-              direction="bottom"
-              blur
-            />
+          <h1 className={`font-heading font-extrabold ${setting.headline}`}>
+            {t.headline.map((line, index) => (
+              <StaggeredText
+                key={line}
+                text={line}
+                as="span"
+                className={cn(lineTone(index, t.headline.length), setting.line)}
+                segmentBy={setting.segmentBy}
+                delay={LINE_DELAYS[index]}
+                duration={0.8}
+                direction="bottom"
+                blur
+              />
+            ))}
           </h1>
 
           <motion.p
@@ -106,10 +154,9 @@ export function HeroSection() {
             transition={{ duration: 0.7, delay: 0.9 }}
             className="mt-7 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg"
           >
-            Diploma in Information Technology at Nanyang Polytechnic, specialising in{' '}
-            <RotatingWord words={heroRotation} className="text-lime" />. First place at the{' '}
-            <em className="font-serif text-foreground">NYP × AWS Hackathon 2026</em>. Seeking a
-            2027 software engineering internship in Singapore.
+            {t.intro(<RotatingWord words={heroRotation} className="text-lime" />, (text) => (
+              <em className={setting.accent}>{text}</em>
+            ))}
           </motion.p>
 
           <motion.div
@@ -122,7 +169,7 @@ export function HeroSection() {
               href="/work"
               className="group inline-flex items-center gap-2 rounded-full bg-lime px-6 py-3.5 font-mono text-xs uppercase tracking-widest text-black transition-transform hover:scale-[1.03]"
             >
-              View my work
+              {t.viewWork}
               <ArrowUpRight className="size-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
             </Link>
 
@@ -130,7 +177,7 @@ export function HeroSection() {
               href="/book"
               className="group inline-flex items-center gap-2 rounded-full border border-hairline px-6 py-3.5 font-mono text-xs uppercase tracking-widest transition-colors hover:border-lime/40 hover:bg-lime/5"
             >
-              Book a session
+              {bookSession}
               <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
             </Link>
 
@@ -140,7 +187,7 @@ export function HeroSection() {
               className="group inline-flex items-center gap-2 px-2 py-3.5 font-mono text-xs uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground"
             >
               <Download className="size-4" />
-              <span className="link-underline">Résumé</span>
+              <span className="link-underline">{t.resume}</span>
             </a>
           </motion.div>
         </div>
@@ -157,7 +204,7 @@ export function HeroSection() {
 
       <div className="pointer-events-none absolute bottom-6 left-1/2 hidden -translate-x-1/2 md:block">
         <span className="font-mono text-[0.6rem] uppercase tracking-[0.3em] text-muted-foreground">
-          Scroll
+          {t.scroll}
         </span>
       </div>
     </section>

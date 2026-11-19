@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useStillness } from '@/lib/use-stillness';
 import { cn } from '@/lib/utils';
+import { sectionsDict } from '@/i18n/dictionaries/sections';
+import { useT } from '@/i18n/LocaleProvider';
 
 /**
  * A holographic trading card: layered parallax, a foil that tracks the pointer,
@@ -73,13 +75,14 @@ export function HoloCard({
   front,
   back,
   className,
-  flipLabel = 'Flip the card over',
+  flipLabel,
 }: {
   front: ReactNode;
   back: ReactNode;
   className?: string;
   flipLabel?: string;
 }) {
+  const fallbackLabel = useT(sectionsDict).holoCard.flip;
   const still = useStillness();
   const tiltRef = useRef<HTMLDivElement>(null);
   const motionRef = useRef<Motion>(rest());
@@ -232,7 +235,7 @@ export function HoloCard({
             'transition-colors hover:border-lime/50 hover:text-foreground',
           )}
         >
-          {flipLabel}
+          {flipLabel ?? fallbackLabel}
         </button>
       </div>
     </div>

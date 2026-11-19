@@ -3,6 +3,8 @@
 import * as React from "react"
 import { Command as CommandPrimitive } from "cmdk"
 
+import { chromeDict } from "@/i18n/dictionaries/chrome"
+import { useT } from "@/i18n/LocaleProvider"
 import { cn } from "@/lib/utils"
 import {
   Dialog,
@@ -34,8 +36,8 @@ function Command({
 }
 
 function CommandDialog({
-  title = "Command Palette",
-  description = "Search for a command to run...",
+  title,
+  description,
   children,
   className,
   showCloseButton = false,
@@ -46,11 +48,13 @@ function CommandDialog({
   className?: string
   showCloseButton?: boolean
 }) {
+  // Fallbacks for a caller that names neither; the site's palette names both.
+  const t = useT(chromeDict).primitives
   return (
     <Dialog {...props}>
       <DialogHeader className="sr-only">
-        <DialogTitle>{title}</DialogTitle>
-        <DialogDescription>{description}</DialogDescription>
+        <DialogTitle>{title ?? t.commandTitle}</DialogTitle>
+        <DialogDescription>{description ?? t.commandDescription}</DialogDescription>
       </DialogHeader>
       <DialogContent
         className={cn(

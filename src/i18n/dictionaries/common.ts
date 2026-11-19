@@ -21,6 +21,12 @@ const en = {
   /** A short duration, as shown beside a post: "4 min". */
   minutes: (count: number) => `${count} min`,
 
+  /** Screen-reader names for the toast region and a toast's close button. */
+  toast: {
+    region: 'Notifications',
+    close: 'Close toast',
+  },
+
   site: {
     /** `<title>` on the home page, and the default share-card title. */
     name: (fullName: string, role: string) => `${fullName} — ${role}`,
@@ -89,6 +95,11 @@ const en = {
 const zh: typeof en = {
   skipToContent: '跳到正文',
   minutes: (count) => `${count} 分钟`,
+
+  toast: {
+    region: '通知',
+    close: '关闭通知',
+  },
 
   site: {
     name: (fullName, role) => `${fullName} — ${role}`,

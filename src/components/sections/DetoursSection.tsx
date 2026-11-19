@@ -1,6 +1,9 @@
 import { Link } from '@/i18n/Link';
 import { ArrowUpRight, Car, Megaphone } from 'lucide-react';
 import { Reveal } from '@/components/common/Reveal';
+import { navigationContent } from '@/content/localized/navigation';
+import { sectionsDict } from '@/i18n/dictionaries/sections';
+import { getLocale } from '@/i18n/server';
 import { cn } from '@/lib/utils';
 
 /**
@@ -16,39 +19,31 @@ import { cn } from '@/lib/utils';
  * also why it is worded as a detour rather than a feature.
  */
 
-const detours = [
-  {
-    href: '/drive',
-    icon: Car,
-    eyebrow: 'Interactive',
-    title: 'Take the car out',
-    body:
-      'A town with a ring road, a real day and night cycle, and my projects behind six gates. Written with its own suspension and tyre model, because the physics engine’s built-in one would not drive.',
-    meta: 'WASD · about 2 MB · loads only if you ask',
-  },
-  {
-    href: '/pitch',
-    icon: Megaphone,
-    eyebrow: 'A joke with a CV inside it',
-    title: 'The pitch',
-    body:
-      'One slider, fifty positions, from “so, yeah, I write software” to a page actively shouting at you. Every claim on it is true — only the volume changes.',
-    meta: 'Drag the dial · find where it tips',
-  },
-] as const;
 
-export function DetoursSection() {
+export async function DetoursSection() {
+  const locale = await getLocale();
+  const t = sectionsDict[locale].detours;
+  /* Each card is titled with the page's own name in the navigation. */
+  const { asideNav } = navigationContent[locale];
+  const titleOf = (href: string) => asideNav.find((item) => item.href === href)?.label ?? href;
+
+  const detours = [
+    { href: '/drive', icon: Car, title: titleOf('/drive'), ...t.drive },
+    { href: '/pitch', icon: Megaphone, title: titleOf('/pitch'), ...t.pitch },
+  ];
+
   return (
     <section id="detours" className="scroll-mt-24 py-20 md:py-28">
       <div className="wrap">
         <Reveal>
-          <p className="eyebrow">Detours</p>
+          <p className="eyebrow">{t.eyebrow}</p>
           <h2 className="mt-4 max-w-2xl font-heading text-3xl font-extrabold tracking-tight sm:text-4xl">
-            Two things that are <span className="text-gradient-lime">not</span> a portfolio
+            {t.heading((word) => (
+              <span className="text-gradient-lime">{word}</span>
+            ))}
           </h2>
           <p className="mt-4 max-w-xl text-base leading-relaxed text-muted-foreground">
-            Built for the fun of it, and because a site that only lists work tells you nothing about
-            how someone builds. Neither is on the critical path — both load only when opened.
+            {t.lede}
           </p>
         </Reveal>
 

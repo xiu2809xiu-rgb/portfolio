@@ -5,7 +5,17 @@ import { Html } from '@react-three/drei';
 import { createPortal } from '@react-three/fiber';
 import { AnimatePresence, motion } from 'motion/react';
 import type * as THREE from 'three';
-import { avatarThoughts } from '@/content/profile';
+import { profileContent } from '@/content/localized/profile';
+import { useT } from '@/i18n/LocaleProvider';
+
+/*
+  The site's sans stack, spelled out because the bubble is styled inline. On the
+  Chinese site `--font-lead` and `--font-cjk` name its Chinese faces; on the
+  English one they are unset and fall back to fonts already in the list.
+*/
+const BUBBLE_FONT =
+  'var(--font-lead, var(--font-outfit)), var(--font-outfit), ' +
+  'var(--font-cjk, ui-sans-serif), ui-sans-serif, system-ui, sans-serif';
 
 interface AvatarThoughtProps {
   /** The rig's head bone. The bubble is parented to it. */
@@ -28,6 +38,7 @@ interface AvatarThoughtProps {
  * canvas is small.
  */
 export function AvatarThought({ head, intervalMs = 4200 }: AvatarThoughtProps) {
+  const { avatarThoughts } = useT(profileContent);
   const [index, setIndex] = useState(0);
   const [ready, setReady] = useState(false);
 
@@ -44,7 +55,7 @@ export function AvatarThought({ head, intervalMs = 4200 }: AvatarThoughtProps) {
       intervalMs,
     );
     return () => clearInterval(timer);
-  }, [ready, intervalMs]);
+  }, [ready, intervalMs, avatarThoughts.length]);
 
   if (!head) return null;
 
@@ -86,7 +97,7 @@ export function AvatarThought({ head, intervalMs = 4200 }: AvatarThoughtProps) {
                 // scaled 3D overlay, so it needs a size that survives the scale.
                 fontSize: '15px',
                 lineHeight: 1.35,
-                fontFamily: 'var(--font-outfit), ui-sans-serif, system-ui, sans-serif',
+                fontFamily: BUBBLE_FONT,
                 fontWeight: 600,
                 letterSpacing: '-0.01em',
                 color: '#e9ecef',

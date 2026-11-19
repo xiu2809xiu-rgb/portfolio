@@ -5,7 +5,10 @@ import { MapPin } from 'lucide-react';
 import BlurHighlight from '@/components/react-bits/blur-highlight';
 import { Reveal } from '@/components/common/Reveal';
 import { SectionHeading } from '@/components/common/SectionHeading';
-import { profile } from '@/content/profile';
+import { profileContent } from '@/content/localized/profile';
+import type { Locale } from '@/i18n/config';
+import { homeDict } from '@/i18n/dictionaries/home';
+import { useLocale, useT } from '@/i18n/LocaleProvider';
 
 const PixelReveal = dynamic(() => import('@/components/react-bits/pixel-reveal'), {
   ssr: false,
@@ -14,25 +17,22 @@ const PixelReveal = dynamic(() => import('@/components/react-bits/pixel-reveal')
   ),
 });
 
-/**
- * Phrases BlurHighlight brings into focus as the copy scrolls in.
- *
- * These must match strings that exist verbatim in `profile.bio` — a phrase that
- * is not present simply never highlights, so they are updated together.
- */
-const HIGHLIGHTS = [
-  'the interface, the API behind it, and the research',
-  'Full-Stack Development and Digital UX Design',
-  'Five of them were blocked by a map popup',
-  'first place at the NYP × AWS Hackathon 2026',
-  '2027 software engineering internship',
-];
+/*
+  BlurHighlight flattens whatever it is given into one run of text, so the bio
+  is handed over already joined — with a space after an English full stop, and
+  with nothing after a Chinese one, which carries its own space.
+*/
+const SENTENCE_GAP: Record<Locale, string> = { en: ' ', zh: '' };
 
 export function AboutSection() {
+  const locale = useLocale();
+  const t = useT(homeDict).about;
+  const { profile } = useT(profileContent);
+
   return (
     <section id="about" className="scroll-mt-24 py-20 md:py-28">
       <div className="wrap">
-        <SectionHeading index="01" title="About" />
+        <SectionHeading index="01" title={t.title} />
 
         <div className="grid gap-10 lg:grid-cols-[minmax(0,22rem)_1fr] lg:gap-16">
           <Reveal>
@@ -60,15 +60,13 @@ export function AboutSection() {
           <div>
             <Reveal delay={0.1}>
               <BlurHighlight
-                highlightedBits={HIGHLIGHTS}
+                highlightedBits={t.highlights}
                 highlightColor="rgba(180,255,57,0.22)"
                 blurAmount={3}
                 inactiveOpacity={0.45}
                 className="space-y-5 text-base leading-relaxed text-muted-foreground sm:text-lg"
               >
-                {profile.bio.map((paragraph) => (
-                  <p key={paragraph.slice(0, 32)}>{paragraph}</p>
-                ))}
+                {profile.bio.join(SENTENCE_GAP[locale])}
               </BlurHighlight>
             </Reveal>
 
@@ -85,7 +83,7 @@ export function AboutSection() {
 
             <Reveal delay={0.3}>
               <div className="mt-8">
-                <p className="eyebrow mb-3">Currently exploring</p>
+                <p className="eyebrow mb-3">{t.exploring}</p>
                 <ul className="flex flex-wrap gap-2">
                   {profile.exploring.map((topic) => (
                     <li

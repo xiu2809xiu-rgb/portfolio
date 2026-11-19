@@ -2,15 +2,22 @@ import type { Metadata } from 'next';
 import { CalendarClock, ShieldCheck, Zap } from 'lucide-react';
 import { BookingFlow } from '@/components/booking/BookingFlow';
 import type { PolicyConfig } from '@/components/booking/types';
-import { profile } from '@/content/profile';
+import { profileContent } from '@/content/localized/profile';
+import type { Locale } from '@/i18n/config';
+import { bookingDict } from '@/i18n/dictionaries/booking';
+import { getLocale, localizedAlternates } from '@/i18n/server';
 import { Container } from '@/infrastructure/Container';
 
-export const metadata: Metadata = {
-  title: 'Book a session',
-  description:
-    'Pick a 15, 30, 45, or 60 minute slot on my calendar. Only my free/busy is shown — never what I am actually doing.',
-  alternates: { canonical: '/book' },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  const t = bookingDict[locale].meta;
+
+  return {
+    title: t.title,
+    description: t.description,
+    alternates: localizedAlternates(locale, '/book'),
+  };
+}
 
 // Availability is live data; never prerender this page.
 export const dynamic = 'force-dynamic';
@@ -23,49 +30,32 @@ export const dynamic = 'force-dynamic';
   subheading and the assurance card are derived from `calendar.isLive` so the page
   can only ever promise what the running configuration can actually deliver.
 */
-const assurancesFor = (live: boolean) => [
-  live
-    ? {
-        icon: Zap,
-        title: 'Held while I answer',
-        body: 'Your slot is reserved the moment you submit, and I confirm it myself — usually the same day.',
-      }
-    : {
-        icon: Zap,
-        title: 'Confirmed by email',
-        body: 'The calendar is in demo mode right now, so I confirm each request by email myself.',
-      },
-  {
-    icon: ShieldCheck,
-    title: 'Free/busy only',
-    body: 'The grid shows whether I am free — never event titles, guests, or what I am doing.',
-  },
-  {
-    icon: CalendarClock,
-    title: 'Your timezone',
-    body: 'Every slot is shown in my time and yours, so nobody does mental arithmetic.',
-  },
+const assurancesFor = (live: boolean, t: (typeof bookingDict)[Locale]['page']['assurances']) => [
+  { icon: Zap, ...(live ? t.held : t.byEmail) },
+  { icon: ShieldCheck, ...t.freeBusy },
+  { icon: CalendarClock, ...t.timezone },
 ];
 
-export default function BookPage() {
+export default async function BookPage() {
+  const locale = await getLocale();
+  const t = bookingDict[locale].page;
+  const { profile } = profileContent[locale];
   const container = Container.resolve();
   const config = container.policy.toClientConfig() as PolicyConfig;
   const live = container.calendar.isLive;
-  const assurances = assurancesFor(live);
+  const assurances = assurancesFor(live, t.assurances);
 
   return (
     <div className="wrap pb-24 pt-32 md:pt-40">
       <div className="mx-auto max-w-2xl text-center">
         <p className="eyebrow">~/{profile.shortName.toLowerCase()}/schedule</p>
         <h1 className="mt-4 font-heading text-[clamp(2.25rem,7vw,4rem)] font-extrabold leading-[1.02] tracking-[-0.03em]">
-          Let&rsquo;s find <span className="text-gradient-lime">a time</span>
+          {t.heading((text) => (
+            <span className="text-gradient-lime">{text}</span>
+          ))}
         </h1>
         <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-muted-foreground">
-          Internships, project questions, a code review, or just a conversation about building
-          things.{' '}
-          {live
-            ? "Pick a length and a slot. It is held for you straight away, and I’ll confirm it myself — you’ll hear back either way."
-            : "Pick a length and a slot — this calendar is in demo mode at the moment, so I’ll confirm by email."}
+          {t.lede(live)}
         </p>
       </div>
 
@@ -84,11 +74,11 @@ export default function BookPage() {
       </ul>
 
       <p className="mx-auto mt-10 max-w-2xl text-center text-sm text-muted-foreground">
-        Prefer email? Reach me at{' '}
-        <a href={`mailto:${profile.email}`} className="link-underline text-foreground">
-          {profile.email}
-        </a>
-        .
+        {t.emailInstead(
+          <a href={`mailto:${profile.email}`} className="link-underline text-foreground">
+            {profile.email}
+          </a>,
+        )}
       </p>
     </div>
   );

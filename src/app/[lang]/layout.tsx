@@ -132,6 +132,16 @@ export default async function RootLayout({ children, params }: LayoutProps<'/[la
   const { projects } = projectsContent[locale];
   // Loaded on the server so the palette has its corpus before it ever opens.
   const posts = await getPosts(locale);
+  /*
+    The same entries in the other language, as extra words to match on. Someone
+    reading the Chinese site may well remember a post by its English title, and
+    the other way round; this lets either find it without showing both.
+  */
+  const otherLocale = locale === 'en' ? 'zh' : 'en';
+  const otherProjects = projectsContent[otherLocale].projects;
+  const otherPosts = await getPosts(otherLocale);
+  const twinOf = <T extends { slug: string }>(list: readonly T[], slug: string) =>
+    list.find((entry) => entry.slug === slug);
 
   /** JSON-LD so search engines can read the person, not just the page. */
   const personSchema = {
@@ -189,16 +199,26 @@ export default async function RootLayout({ children, params }: LayoutProps<'/[la
         <SiteHeader
           commandPalette={
             <CommandPalette
-              projects={projects.map((project) => ({
-                slug: project.slug,
-                title: `${project.title} ${project.titleAccent}`,
-                subtitle: project.term ?? project.role,
-              }))}
-              posts={posts.map((post) => ({
-                slug: post.slug,
-                title: post.title,
-                subtitle: t.minutes(post.readingMinutes),
-              }))}
+              projects={projects.map((project) => {
+                const twin = twinOf(otherProjects, project.slug);
+                return {
+                  slug: project.slug,
+                  title: `${project.title} ${project.titleAccent}`,
+                  subtitle: project.term ?? project.role,
+                  keywords: twin
+                    ? [`${twin.title} ${twin.titleAccent}`, twin.term ?? twin.role]
+                    : undefined,
+                };
+              })}
+              posts={posts.map((post) => {
+                const twin = twinOf(otherPosts, post.slug);
+                return {
+                  slug: post.slug,
+                  title: post.title,
+                  subtitle: t.minutes(post.readingMinutes),
+                  keywords: twin && twin.title !== post.title ? [twin.title] : undefined,
+                };
+              })}
             />
           }
         />
@@ -225,6 +245,8 @@ export default async function RootLayout({ children, params }: LayoutProps<'/[la
           offset={88}
           closeButton
           duration={4500}
+          containerAriaLabel={t.toast.region}
+          toastOptions={{ closeButtonAriaLabel: t.toast.close }}
         />
         <Analytics />
         <SpeedInsights />

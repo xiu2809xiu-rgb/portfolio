@@ -3,6 +3,8 @@
 import { useMemo } from 'react';
 import { DateTime } from 'luxon';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { bookingDict } from '@/i18n/dictionaries/booking';
+import { useT } from '@/i18n/LocaleProvider';
 import { cn } from '@/lib/utils';
 import type { MonthDaySummary } from './types';
 
@@ -16,8 +18,6 @@ interface MonthCalendarProps {
   onMonthChange: (month: string) => void;
   onSelect: (date: string) => void;
 }
-
-const WEEKDAY_LABELS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
 /**
  * Month grid with an availability dot under each bookable day.
@@ -36,6 +36,7 @@ export function MonthCalendar({
   onMonthChange,
   onSelect,
 }: MonthCalendarProps) {
+  const { calendar: t, format } = useT(bookingDict);
   const anchor = DateTime.fromISO(`${month}-01`, { zone: timezone });
 
   const summaries = useMemo(() => {
@@ -65,7 +66,7 @@ export function MonthCalendar({
     <div className="mx-auto w-full max-w-sm lg:mx-0">
       <header className="mb-5 flex items-center justify-between">
         <h3 className="font-heading text-lg font-bold tracking-tight">
-          {anchor.toFormat('LLLL yyyy')}
+          {format.monthTitle(anchor)}
         </h3>
 
         <div className="flex items-center gap-1">
@@ -74,7 +75,7 @@ export function MonthCalendar({
             disabled={!canGoBack}
             onClick={() => onMonthChange(anchor.minus({ months: 1 }).toFormat('yyyy-MM'))}
             className="grid size-8 place-items-center rounded-lg border border-hairline transition-colors hover:border-lime/40 hover:bg-lime/5 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:border-hairline disabled:hover:bg-transparent"
-            aria-label="Previous month"
+            aria-label={t.previousMonth}
           >
             <ChevronLeft className="size-4" />
           </button>
@@ -82,15 +83,15 @@ export function MonthCalendar({
             type="button"
             onClick={() => onMonthChange(anchor.plus({ months: 1 }).toFormat('yyyy-MM'))}
             className="grid size-8 place-items-center rounded-lg border border-hairline transition-colors hover:border-lime/40 hover:bg-lime/5"
-            aria-label="Next month"
+            aria-label={t.nextMonth}
           >
             <ChevronRight className="size-4" />
           </button>
         </div>
       </header>
 
-      <div className="grid grid-cols-7 gap-1" role="grid" aria-label="Choose a date">
-        {WEEKDAY_LABELS.map((label) => (
+      <div className="grid grid-cols-7 gap-1" role="grid" aria-label={t.grid}>
+        {format.weekdayInitials.map((label) => (
           <div
             key={label}
             className="pb-2 text-center font-mono text-[0.6rem] uppercase tracking-widest text-muted-foreground"
@@ -118,9 +119,10 @@ export function MonthCalendar({
               disabled={!bookable || loading}
               onClick={() => onSelect(date)}
               aria-selected={isSelected}
-              aria-label={`${cell.toFormat('cccc d LLLL')}${
-                bookable ? ` — ${summary?.freeCount} slots free` : ' — unavailable'
-              }`}
+              aria-label={t.dayLabel(
+                format.dayName(cell),
+                bookable && summary ? summary.freeCount : null,
+              )}
               className={cn(
                 'relative flex aspect-square flex-col items-center justify-center rounded-lg text-sm transition-all',
                 'max-h-11',
@@ -154,7 +156,7 @@ export function MonthCalendar({
 
       {loading ? (
         <p className="mt-4 text-center font-mono text-[0.65rem] uppercase tracking-widest text-muted-foreground">
-          Checking calendar…
+          {t.checking}
         </p>
       ) : null}
     </div>

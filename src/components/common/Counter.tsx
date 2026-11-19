@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { intlLocale, type Locale } from '@/i18n/config';
+import { useLocale } from '@/i18n/LocaleProvider';
 import { useStillness } from '@/lib/use-stillness';
 
 interface CounterProps {
@@ -9,6 +11,16 @@ interface CounterProps {
   durationMs?: number;
   className?: string;
 }
+
+/*
+  Chinese typesetting leaves an integer of four digits or fewer ungrouped
+  (GB/T 15835), which is what `min2` does: 2028 stays 2028 and 12345 still
+  becomes 12,345. English keeps the grouping it has always had.
+*/
+const GROUPING: Record<Locale, Intl.NumberFormatOptions> = {
+  en: {},
+  zh: { useGrouping: 'min2' },
+};
 
 /**
  * Counts up to `value` the first time it scrolls into view.
@@ -23,6 +35,7 @@ interface CounterProps {
  * client would print the final number, which is a hydration mismatch.
  */
 export function Counter({ value, suffix = '', durationMs = 1600, className }: CounterProps) {
+  const locale = useLocale();
   const reduced = useStillness();
   const ref = useRef<HTMLSpanElement>(null);
   const [counted, setCounted] = useState(0);
@@ -67,7 +80,7 @@ export function Counter({ value, suffix = '', durationMs = 1600, className }: Co
 
   return (
     <span ref={ref} className={className}>
-      {display.toLocaleString('en-SG')}
+      {display.toLocaleString(intlLocale[locale], GROUPING[locale])}
       {suffix}
     </span>
   );

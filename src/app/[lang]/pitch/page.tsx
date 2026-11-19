@@ -1,12 +1,18 @@
 import type { Metadata } from 'next';
+import { pitchDict } from '@/i18n/dictionaries/pitch';
+import { getLocale, localizedAlternates } from '@/i18n/server';
 import { PitchClient } from './PitchClient';
 
-export const metadata: Metadata = {
-  title: 'The pitch',
-  description:
-    'One slider, fifty positions, from "what of it?" to a page actively shouting. Every claim on it is true; only the volume changes.',
-  alternates: { canonical: '/pitch' },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  const t = pitchDict[locale].meta;
+
+  return {
+    title: t.title,
+    description: t.description,
+    alternates: localizedAlternates(locale, '/pitch'),
+  };
+}
 
 /**
  * A joke with a real CV inside it.

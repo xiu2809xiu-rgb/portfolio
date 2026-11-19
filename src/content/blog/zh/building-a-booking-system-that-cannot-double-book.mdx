@@ -1,0 +1,88 @@
+---
+title: 做一个不会撞期的预约系统
+description: 两个人前后只差半秒，点了同一个 10:00 的时段。只能有一个人约到。这篇讲我是怎么保证这一点的。
+date: 2026-08-18
+tags:
+  - 架构
+  - typescript
+  - 预约系统
+---
+
+这个网站的预约页面看起来很简单：选时长，选时段，搞定。真正有意思的，是一种大家设计时都会漏掉的异常情况——**两个人几乎在同一时刻选了同一个时段**。
+
+要写出一个错了几个月都没人发现的版本，一点也不难。
+
+## 看起来没问题的版本
+
+```typescript
+const slots = await getAvailableSlots(date);
+// ... user picks one, fills in a form, submits ...
+await calendar.createEvent(chosenSlot);
+```
+
+这里的 bug，就藏在“读取可预约时间”和“写入预约”之间的那段空档里。访客看到时段表，花 90 秒填邮箱，然后提交。就在这 90 秒里，别人完全可以把这个时段约走，而这段代码浑然不觉。
+
+解决办法是一条我现在到处都在用的规则：**凡是展示给用户的东西，等到用户动手时，都已经过期了**。可预约时间只是给 UI 看的提示，从来不是通行证。
+
+## 提交时，在服务器上再查一遍
+
+每一次提交预约，服务器在写入任何数据之前，都会从头重新算一遍可预约时间：
+
+```typescript
+const { ok, state } = await this.availability.isBookable(slot);
+if (!ok) {
+  if (state === 'busy') throw new SlotAlreadyBookedError();
+  throw new SlotUnavailableError('That slot is no longer available.');
+}
+```
+
+客户端认为哪个时段有空，服务器一概不信。客户端报上来的*结束*时间，同样不信——结束时间由时长推算出来，所以谁也没法提交一个名义上 15 分钟、实际却悄悄占掉 3 小时的预约。
+
+## 先占住时段，再调用日历
+
+顺序比想象中重要得多。最顺理成章的写法——先创建日历事件，再保存记录——恰恰是反的：
+
+```typescript
+// Claim the slot first. A concurrent request loses the race here,
+// not on the calendar, where two events for one slot would be far worse.
+await this.repository.save(booking);
+
+try {
+  const { eventId } = await this.calendar.createEvent(booking);
+  booking.attachCalendarEvent(eventId);
+  await this.repository.save(booking);
+} catch (error) {
+  await this.repository.markCancelled(booking.reference).catch(() => undefined);
+  throw error;
+}
+```
+
+先写记录，没抢到的那个请求当场就败在一次开销很小的本地写入上，而不是等一趟缓慢的 Google 网络调用回来之后才失败。日历调用要是失败了，这条记录就回滚——所以网站永远不会为一场并不存在的预约显示“已确认”。
+
+## 用半开区间，否则首尾相接的预约会冲突
+
+这个细节，人人都会踩一次坑：
+
+```typescript
+overlaps(other: TimeSlot): boolean {
+  return this.start < other.end && other.start < this.end;
+}
+```
+
+两边都是严格小于。用 `<=` 就会出事：10:00–10:30 的预约会和 10:30–11:00 的冲突，永远没法连着约两场。把每个区间都当成 `[start, end)` 这样的半开区间，首尾相接的时段就能正常预约，真正的重叠也照样拦得住。
+
+## 存的是时刻，时区只管显示
+
+所有时间都存成 UTC 时刻。时区纯粹是展示层的事，只在系统的最外层才套上去：
+
+```typescript
+slot.start.setZone(viewerTimezone).toFormat('h:mm a')
+```
+
+要是拿本地的挂钟时间做比较，就会得到这样一种 bug：一年只出现两次，专挑夏令时切换的时候，而且只有一部分用户会碰上。
+
+## 换来了什么
+
+现在预约流程有三道互相独立的防线：时段表不会列出已占用的时段；服务器在写入前会再查一遍；而写入本身，就是占住时段的那个动作。任何一道失守，都还剩两道。
+
+做可靠性，多半就是这么回事——靠的不是某个巧妙的机制，而是好几个平平无奇、出了问题也互不牵连的机制。

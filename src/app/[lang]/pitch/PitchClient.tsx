@@ -3,14 +3,17 @@
 import { useMemo, useState } from 'react';
 import { Link } from '@/i18n/Link';
 import { ArrowLeft } from 'lucide-react';
-import {
-  hardSellLines,
-  lineText,
-  shoutingPoints,
-  stageFor,
-  type SellLine,
-} from '@/content/hard-sell';
+/*
+  The English list only fixes the dial's length, which is the same in both
+  languages — the Chinese module is laid out line for line against it. The
+  words themselves come from the reader's language below.
+*/
+import { hardSellLines, lineText, stageFor, type SellLine } from '@/content/hard-sell';
+import { hardSellContent } from '@/content/localized/hard-sell';
 import { profile } from '@/content/profile';
+import { commonDict } from '@/i18n/dictionaries/common';
+import { pitchDict } from '@/i18n/dictionaries/pitch';
+import { useT } from '@/i18n/LocaleProvider';
 import {
   BigArrow,
   Confetti,
@@ -34,13 +37,16 @@ const MAX = hardSellLines.length;
  * the visitor to find.
  */
 export function PitchClient() {
+  const t = useT(pitchDict);
+  const { bookSession } = useT(commonDict).header;
+  const { hardSellLines: lines, shoutingPoints } = useT(hardSellContent);
   const still = useStillness();
   const [level, setLevel] = useState(1);
   /* Reaching for a link stops the shaking, so it can actually be clicked. */
   const [steadying, setSteadying] = useState(false);
 
   const stage = stageFor(level);
-  const line = hardSellLines[level - 1];
+  const line = lines[level - 1];
   const heat = (level - 1) / (MAX - 1);
   const light = stage === 'infomercial';
 
@@ -85,7 +91,7 @@ export function PitchClient() {
             className="pointer-events-none absolute inset-0 grid place-items-center font-heading text-[26vw] font-black leading-none tracking-tighter"
             style={{ color: light ? 'rgba(0,0,0,0.05)' : 'rgba(180,255,57,0.07)' }}
           >
-            HIRE
+            {t.ghost}
           </p>
         ) : null}
 
@@ -106,7 +112,7 @@ export function PitchClient() {
               light ? 'border-black/20 bg-white/80 text-black/70' : 'border-lime/40 bg-black/60 text-lime',
             )}
           >
-            1st place · NYP × AWS Hackathon 2026
+            {t.badge}
           </p>
         ) : null}
 
@@ -149,7 +155,7 @@ export function PitchClient() {
               href={`mailto:${profile.email}`}
               className="rounded-full bg-lime px-7 py-3.5 font-heading text-base font-black uppercase tracking-tight text-black transition-transform hover:-translate-y-0.5 sm:text-xl"
             >
-              Email me
+              {t.emailMe}
             </a>
             <Link
               href="/book"
@@ -158,7 +164,7 @@ export function PitchClient() {
                 light ? 'bg-black text-white' : 'bg-white text-black',
               )}
             >
-              Book a session
+              {bookSession}
             </Link>
           </div>
         ) : null}
@@ -175,7 +181,7 @@ export function PitchClient() {
         )}
       >
         <ArrowLeft className="size-3.5" />
-        Back to the site
+        {t.backToSite}
       </Link>
 
       {/* ── The dial ── */}
@@ -186,7 +192,7 @@ export function PitchClient() {
         )}
       >
         <label htmlFor="hard-sell" className="sr-only">
-          How hard should Richie sell himself? 1 is least, {MAX} is most.
+          {t.slider.label(MAX)}
         </label>
         <input
           id="hard-sell"
@@ -196,7 +202,7 @@ export function PitchClient() {
           step={1}
           value={level}
           onChange={(event) => setLevel(Number(event.target.value))}
-          aria-valuetext={`${level} of ${MAX}: ${lineText(line)}`}
+          aria-valuetext={t.slider.value(level, MAX, lineText(line))}
           className={cn('pitch-range w-full', light && 'pitch-range-light')}
         />
         <div
@@ -205,7 +211,7 @@ export function PitchClient() {
             light ? 'text-black/70' : 'text-white/70',
           )}
         >
-          <span>Less Hard Sell</span>
+          <span>{t.slider.less}</span>
           <span
             className={cn(
               'font-mono text-[0.62rem] not-italic tracking-[0.2em]',
@@ -214,7 +220,7 @@ export function PitchClient() {
           >
             {level} / {MAX}
           </span>
-          <span>More Hard Sell</span>
+          <span>{t.slider.more}</span>
         </div>
       </div>
     </div>

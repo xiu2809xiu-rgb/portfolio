@@ -6,6 +6,9 @@ import { AnimatePresence, motion } from 'motion/react';
 import { Clock, Globe } from 'lucide-react';
 import { toast } from 'sonner';
 import { ALLOWED_DURATIONS } from '@/core/booking/domain/Duration';
+import { bookingDict } from '@/i18n/dictionaries/booking';
+import { commonDict } from '@/i18n/dictionaries/common';
+import { useT } from '@/i18n/LocaleProvider';
 import { cn } from '@/lib/utils';
 import { AvailabilityUnavailable } from './AvailabilityUnavailable';
 import { Confirmation } from './Confirmation';
@@ -37,6 +40,8 @@ interface BookingFlowProps {
  * them staring at a form for a slot that no longer exists.
  */
 export function BookingFlow({ initialConfig, calendarLive }: BookingFlowProps) {
+  const t = useT(bookingDict);
+  const { minutes: minutesLabel } = useT(commonDict);
   const ownerTimezone = initialConfig.timezone;
 
   const [duration, setDuration] = useState<number>(30);
@@ -135,18 +140,22 @@ export function BookingFlow({ initialConfig, calendarLive }: BookingFlowProps) {
 
         if (!response.ok) {
           const apiError = payload as ApiError;
+          /* The server writes English; this picks the words for the page's language. */
+          const message = t.errors.submit(apiError);
 
           if (apiError.issues?.length) {
             setFieldErrors(
-              Object.fromEntries(apiError.issues.map((issue) => [issue.field, issue.message])),
+              Object.fromEntries(
+                apiError.issues.map((issue) => [issue.field, t.errors.field(issue)]),
+              ),
             );
           }
 
-          setError(apiError.message);
+          setError(message);
 
           // The slot went while the form was open — send them back to re-pick.
           if (response.status === 409) {
-            toast.error(apiError.message);
+            toast.error(message);
             setStep('when');
             setSelectedSlot(null);
             if (effectiveDate) void loadDay(effectiveDate);
@@ -167,12 +176,12 @@ export function BookingFlow({ initialConfig, calendarLive }: BookingFlowProps) {
           feedback that has nowhere else to appear.
         */
       } catch {
-        setError('Could not reach the server. Check your connection and try again.');
+        setError(t.errors.network);
       } finally {
         setSubmitting(false);
       }
     },
-    [selectedSlot, duration, viewerTimezone, effectiveDate, month, loadDay, loadMonth],
+    [selectedSlot, duration, viewerTimezone, effectiveDate, month, loadDay, loadMonth, t],
   );
 
   const reset = useCallback(() => {
@@ -203,7 +212,7 @@ export function BookingFlow({ initialConfig, calendarLive }: BookingFlowProps) {
                 <div
                   className="flex flex-wrap gap-2"
                   role="group"
-                  aria-label="Session length"
+                  aria-label={t.when.lengthGroup}
                 >
                   {ALLOWED_DURATIONS.map((minutes) => (
                     <button
@@ -218,14 +227,14 @@ export function BookingFlow({ initialConfig, calendarLive }: BookingFlowProps) {
                           : 'border-hairline text-muted-foreground hover:border-lime/30 hover:text-foreground',
                       )}
                     >
-                      {minutes} min
+                      {minutesLabel(minutes)}
                     </button>
                   ))}
                 </div>
 
                 <p className="flex items-center gap-1.5 font-mono text-[0.65rem] uppercase tracking-widest text-muted-foreground">
                   <Globe className="size-3.5" />
-                  {ownerTimezone.split('/')[1]?.replace('_', ' ') ?? ownerTimezone}
+                  {t.format.zoneShort(ownerTimezone)}
                 </p>
               </div>
 
@@ -268,10 +277,7 @@ export function BookingFlow({ initialConfig, calendarLive }: BookingFlowProps) {
               {!calendarLive ? (
                 <p className="mt-6 flex items-start gap-2 rounded-xl border border-warning/25 bg-warning/[0.07] p-3 text-xs leading-relaxed text-warning">
                   <Clock className="mt-0.5 size-4 shrink-0" />
-                  <span>
-                    Showing demo availability. Once Google Calendar is connected this grid
-                    reflects my real free/busy — only whether I am free, never what I am doing.
-                  </span>
+                  <span>{t.when.demoNotice}</span>
                 </p>
               ) : null}
             </motion.div>

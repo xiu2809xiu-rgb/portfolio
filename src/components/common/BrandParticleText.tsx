@@ -2,12 +2,26 @@
 
 import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
+import type { Locale } from '@/i18n/config';
+import { useLocale } from '@/i18n/LocaleProvider';
 import { cn } from '@/lib/utils';
 
 const ParticleText = dynamic(() => import('@/components/react-bits/particle-text'), {
   ssr: false,
   loading: () => null,
 });
+
+/*
+  What follows the brand font in the canvas font string. A canvas never sees the
+  stylesheet, so on the Chinese site its Chinese faces have to be named here as
+  well — left to the system's own fallback, Windows can draw a Han character in
+  its Japanese form. Both callers pass the name, which stays Latin in either
+  language, but the component draws whatever it is handed.
+*/
+const FONT_TAIL: Record<Locale, string> = {
+  en: 'ui-sans-serif, sans-serif',
+  zh: '"PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif',
+};
 
 interface BrandParticleTextProps {
   text: string;
@@ -49,6 +63,7 @@ export function BrandParticleText({
   radius = 110,
   strength = 3.2,
 }: BrandParticleTextProps) {
+  const tail = FONT_TAIL[useLocale()];
   const [enabled, setEnabled] = useState(false);
   const [fontFamily, setFontFamily] = useState('ui-sans-serif, system-ui, sans-serif');
 
@@ -72,10 +87,10 @@ export function BrandParticleText({
       const resolved = getComputedStyle(document.documentElement)
         .getPropertyValue('--font-outfit')
         .trim();
-      if (resolved) setFontFamily(`${resolved}, ui-sans-serif, sans-serif`);
+      if (resolved) setFontFamily(`${resolved}, ${tail}`);
     });
     return () => cancelAnimationFrame(frame);
-  }, []);
+  }, [tail]);
 
   if (!enabled) return <>{fallback}</>;
 

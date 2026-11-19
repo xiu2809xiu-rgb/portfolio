@@ -3,6 +3,8 @@
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
+import { homeDict } from '@/i18n/dictionaries/home';
+import { useT } from '@/i18n/LocaleProvider';
 import { cn } from '@/lib/utils';
 
 /**
@@ -24,6 +26,7 @@ const BACK = '/img/lanyard/badge-back.png';
  * as a still image instead. Same content either way, no dead space.
  */
 export function LanyardBadge({ className }: { className?: string }) {
+  const t = useT(homeDict).badge;
   const hostRef = useRef<HTMLDivElement>(null);
   const [interactive, setInteractive] = useState(false);
   const [near, setNear] = useState(false);
@@ -77,7 +80,7 @@ export function LanyardBadge({ className }: { className?: string }) {
               imageFit="cover"
             />
             <p className="pointer-events-none absolute inset-x-0 bottom-0 text-center font-mono text-[0.62rem] uppercase tracking-[0.25em] text-muted-foreground">
-              Drag the badge
+              {t.dragHint}
             </p>
           </>
         ) : (
@@ -89,7 +92,7 @@ export function LanyardBadge({ className }: { className?: string }) {
         <div className="grid size-full place-items-center">
           <Image
             src={FRONT}
-            alt="Richie Koh — Software Developer, Nanyang Polytechnic"
+            alt={t.alt}
             width={660}
             height={1000}
             className="h-full w-auto rounded-2xl border border-hairline object-contain shadow-2xl"

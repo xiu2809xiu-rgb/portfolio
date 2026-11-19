@@ -5,6 +5,8 @@ import Image from 'next/image';
 import { ChevronLeft, ChevronRight, Expand, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Screenshot } from '@/content/types';
+import { workDict } from '@/i18n/dictionaries/work';
+import { useT } from '@/i18n/LocaleProvider';
 
 interface ProjectGalleryProps {
   screenshots: readonly Screenshot[];
@@ -18,6 +20,7 @@ interface ProjectGalleryProps {
  * frame beat a 3D effect that distorts them.
  */
 export function ProjectGallery({ screenshots }: ProjectGalleryProps) {
+  const t = useT(workDict).gallery;
   const [active, setActive] = useState(0);
   const [lightbox, setLightbox] = useState(false);
 
@@ -78,7 +81,7 @@ export function ProjectGallery({ screenshots }: ProjectGalleryProps) {
             className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full border border-hairline bg-black/70 px-3 py-1.5 font-mono text-[0.62rem] uppercase tracking-widest opacity-0 backdrop-blur transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
           >
             <Expand className="size-3" />
-            Expand
+            {t.expand}
           </button>
         </div>
 
@@ -88,7 +91,7 @@ export function ProjectGallery({ screenshots }: ProjectGalleryProps) {
       <div
         className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-6"
         role="tablist"
-        aria-label="Screenshots"
+        aria-label={t.screenshots}
       >
         {screenshots.map((shot, index) => (
           <button
@@ -134,7 +137,7 @@ export function ProjectGallery({ screenshots }: ProjectGalleryProps) {
             type="button"
             onClick={() => setLightbox(false)}
             className="absolute right-5 top-5 grid size-10 place-items-center rounded-full border border-hairline transition-colors hover:border-lime/40"
-            aria-label="Close"
+            aria-label={t.close}
           >
             <X className="size-4" />
           </button>
@@ -143,7 +146,7 @@ export function ProjectGallery({ screenshots }: ProjectGalleryProps) {
             type="button"
             onClick={() => step(-1)}
             className="absolute left-3 grid size-11 place-items-center rounded-full border border-hairline transition-colors hover:border-lime/40 sm:left-8"
-            aria-label="Previous screenshot"
+            aria-label={t.previous}
           >
             <ChevronLeft className="size-5" />
           </button>
@@ -162,7 +165,7 @@ export function ProjectGallery({ screenshots }: ProjectGalleryProps) {
             type="button"
             onClick={() => step(1)}
             className="absolute right-3 grid size-11 place-items-center rounded-full border border-hairline transition-colors hover:border-lime/40 sm:right-8"
-            aria-label="Next screenshot"
+            aria-label={t.next}
           >
             <ChevronRight className="size-5" />
           </button>

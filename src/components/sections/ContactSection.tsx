@@ -3,7 +3,10 @@
 import { Link } from '@/i18n/Link';
 import { ArrowUpRight, Download } from 'lucide-react';
 import { Reveal } from '@/components/common/Reveal';
-import { profile } from '@/content/profile';
+import { profileContent } from '@/content/localized/profile';
+import { commonDict } from '@/i18n/dictionaries/common';
+import { sectionsDict } from '@/i18n/dictionaries/sections';
+import { useLocale, useT } from '@/i18n/LocaleProvider';
 import { LanyardBadge } from './LanyardBadge';
 
 /**
@@ -15,6 +18,18 @@ import { LanyardBadge } from './LanyardBadge';
  * backdrop did.
  */
 export function ContactSection() {
+  const locale = useLocale();
+  const t = useT(sectionsDict).contact;
+  const { bookSession } = useT(commonDict).header;
+  const { profile } = useT(profileContent);
+  /*
+    The light serif italic is a Latin flourish. Chinese has no italic and its
+    serif is a different design altogether, so there the accent is carried by
+    the colour alone, as in the hero.
+  */
+  const accent =
+    locale === 'zh' ? 'text-lime' : 'font-serif font-light italic text-lime';
+
   return (
     <section id="contact" className="relative scroll-mt-24 overflow-hidden py-24 md:py-32">
       {/* Ambient wash, replacing the canvas that used to sit here. */}
@@ -26,14 +41,14 @@ export function ContactSection() {
       <div className="wrap grid items-center gap-10 lg:grid-cols-[1.15fr_1fr] lg:gap-16">
         <div className="text-center lg:text-left">
           <Reveal>
-            <p className="eyebrow">08 — Contact</p>
+            <p className="eyebrow">{t.eyebrow('08')}</p>
             <h2 className="mt-5 font-heading text-[clamp(2.25rem,7vw,4.25rem)] font-extrabold leading-[1.02] tracking-[-0.03em]">
-              Let&rsquo;s build{' '}
-              <span className="font-serif font-light italic text-lime">something great.</span>
+              {t.heading((words) => (
+                <span className={accent}>{words}</span>
+              ))}
             </h2>
             <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-muted-foreground lg:mx-0">
-              Currently open to internships, collaborations, or just a good conversation about
-              code. The fastest way to reach me is to put something in my calendar.
+              {t.lede}
             </p>
           </Reveal>
 
@@ -43,7 +58,7 @@ export function ContactSection() {
                 href="/book"
                 className="group inline-flex items-center gap-2 rounded-full bg-lime px-7 py-4 font-mono text-xs uppercase tracking-widest text-black transition-transform hover:scale-[1.03]"
               >
-                Book a session
+                {bookSession}
                 <ArrowUpRight className="size-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
               </Link>
 
@@ -53,7 +68,7 @@ export function ContactSection() {
                 className="inline-flex items-center gap-2 rounded-full border border-hairline px-7 py-4 font-mono text-xs uppercase tracking-widest transition-colors hover:border-lime/40 hover:bg-lime/5"
               >
                 <Download className="size-4" />
-                Résumé
+                {t.resume}
               </a>
             </div>
           </Reveal>

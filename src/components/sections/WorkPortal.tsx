@@ -13,7 +13,10 @@ import {
   useTransform,
   type MotionValue,
 } from 'motion/react';
-import { projects } from '@/content/projects';
+import { projectsContent } from '@/content/localized/projects';
+import type { Project } from '@/content/types';
+import { sectionsDict } from '@/i18n/dictionaries/sections';
+import { useT } from '@/i18n/LocaleProvider';
 import { useStillness } from '@/lib/use-stillness';
 import { cn } from '@/lib/utils';
 
@@ -42,6 +45,8 @@ const LETTERS = ['W', 'O', 'R', 'K'] as const;
 const COPIES = 13;
 
 export function WorkPortal() {
+  const t = useT(sectionsDict).work;
+  const { projects } = useT(projectsContent);
   const reduced = useStillness();
   const hostRef = useRef<HTMLElement>(null);
   const trackRef = useRef<HTMLUListElement>(null);
@@ -146,9 +151,9 @@ export function WorkPortal() {
     return (
       <section id="work" ref={hostRef} className="scroll-mt-24 py-20 md:py-28">
         <div className="wrap">
-          <p className="eyebrow">03 — Work</p>
+          <p className="eyebrow">{t.eyebrow('03')}</p>
           <h2 className="mt-4 font-heading text-4xl font-extrabold tracking-tight sm:text-5xl">
-            Work
+            {t.title}
           </h2>
           <ul className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {projects.map((project, index) => (
@@ -169,7 +174,7 @@ export function WorkPortal() {
       className="relative scroll-mt-24"
       // Four screens of scroll: roughly one per phase, plus one for the track.
       style={{ height: '420vh' }}
-      aria-label="Work"
+      aria-label={t.title}
     >
       <div className="sticky top-0 h-screen w-full overflow-hidden bg-[#05070a]">
         {/* ── The lime field, with its grid ── */}
@@ -187,7 +192,7 @@ export function WorkPortal() {
             }}
           />
           <p className="absolute inset-x-0 bottom-8 text-center font-mono text-[0.62rem] uppercase tracking-[0.3em] text-[#05070a]">
-            Scroll to enter
+            {t.scrollHint}
           </p>
         </motion.div>
 
@@ -395,10 +400,12 @@ function ProjectCard({
   index,
   playing,
 }: {
-  project: (typeof projects)[number];
+  project: Project;
   index: number;
   playing: boolean;
 }) {
+  const t = useT(sectionsDict).work;
+  const { projects } = useT(projectsContent);
   const shot = project.screenshots[0];
 
   return (
@@ -418,7 +425,7 @@ function ProjectCard({
           <ProjectPreview
             src={project.preview}
             poster={shot?.src}
-            alt={`${project.title} ${project.titleAccent} preview`}
+            alt={t.previewAlt(`${project.title} ${project.titleAccent}`)}
             playing={playing}
           />
         ) : shot ? (

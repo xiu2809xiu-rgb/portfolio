@@ -1,7 +1,9 @@
 'use client';
 
 import { Link } from '@/i18n/Link';
-import { flyingWork } from '@/content/hard-sell';
+import { hardSellContent } from '@/content/localized/hard-sell';
+import { pitchDict } from '@/i18n/dictionaries/pitch';
+import { useT } from '@/i18n/LocaleProvider';
 import { cn } from '@/lib/utils';
 
 /**
@@ -60,6 +62,7 @@ export function PlaneBanner({ text, light }: { text: string; light: boolean }) {
 
 /** A rubber stamp that thumps down and stays. */
 export function Stamp({ light, still }: { light: boolean; still: boolean }) {
+  const t = useT(pitchDict);
   return (
     <div
       aria-hidden
@@ -75,7 +78,7 @@ export function Stamp({ light, still }: { light: boolean; still: boolean }) {
         )}
         style={{ opacity: 0.85 }}
       >
-        Available
+        {t.stamp}
         <br />
         2027
       </span>
@@ -92,6 +95,8 @@ export function Stamp({ light, still }: { light: boolean; still: boolean }) {
  * portfolio rather than of stock footage.
  */
 export function FlyingWork({ still }: { still: boolean }) {
+  const t = useT(pitchDict);
+  const { flyingWork } = useT(hardSellContent);
   const lanes = [
     { top: '14%', delay: '0s', duration: '17s', tilt: -7 },
     { top: '58%', delay: '5s', duration: '21s', tilt: 6 },
@@ -106,7 +111,7 @@ export function FlyingWork({ still }: { still: boolean }) {
           <Link
             key={item.href}
             href={item.href}
-            aria-label={`${item.title} case study`}
+            aria-label={t.reel(item.title)}
             className="absolute z-10 block w-40 sm:w-56"
             style={{
               top: lane.top,

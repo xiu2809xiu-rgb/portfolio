@@ -64,23 +64,30 @@ export interface BookingConfirmation {
   live: boolean;
 }
 
+/** One field the API rejected. */
+export interface ApiIssue {
+  field: string;
+  message: string;
+  /** Zod's issue code (`too_small`, `too_big`, `invalid_format`), for pages not in English. */
+  code?: string;
+}
+
+/**
+ * A refusal from the booking API. `error` is the stable machine-readable code;
+ * `message` is a sentence in English, written for the English page.
+ */
 export interface ApiError {
   error: string;
   message: string;
-  issues?: { field: string; message: string }[];
+  issues?: ApiIssue[];
 }
 
 /** The three-step wizard state. */
 export type BookingStep = 'when' | 'details' | 'done';
 
-/** Legend copy, kept beside the state union so the two never drift apart. */
-export const SLOT_LEGEND: ReadonlyArray<{
-  state: SlotState;
-  label: string;
-  description: string;
-}> = [
-  { state: 'free', label: 'Free', description: 'Open — pick it and it is yours.' },
-  { state: 'busy', label: 'Busy', description: 'Already booked or blocked on my calendar.' },
-  { state: 'notice', label: 'Too soon', description: 'Inside my minimum notice window.' },
-  { state: 'past', label: 'Past', description: 'This time has already gone.' },
-];
+/**
+ * The order the legend lists the states in. What each one is called lives in
+ * the booking dictionary, keyed by state, so a state added to the union above
+ * fails to compile until it has a name in both languages.
+ */
+export const SLOT_LEGEND: readonly SlotState[] = ['free', 'busy', 'notice', 'past'];

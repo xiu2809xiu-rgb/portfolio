@@ -215,6 +215,12 @@
     font-synthesis: weight small-caps;
     /* Keeps closing punctuation off the start of a line and opening off the end. */
     line-break: strict;
+    /*
+      Stops a paragraph ending on a single character — 新。 alone on the last
+      line reads as a mistake in Chinese, and with no spaces between words it
+      happens far more often than a lone word does in English.
+    */
+    text-wrap: pretty;
   }
 
   body {

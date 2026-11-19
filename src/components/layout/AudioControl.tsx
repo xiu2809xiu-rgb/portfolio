@@ -2,6 +2,8 @@
 
 import { Music, Pause, SkipForward, Volume2, VolumeX } from 'lucide-react';
 import { playlist } from '@/content/audio';
+import { chromeDict } from '@/i18n/dictionaries/chrome';
+import { useT } from '@/i18n/LocaleProvider';
 import { cn } from '@/lib/utils';
 import { useAudio } from './AudioProvider';
 
@@ -16,8 +18,12 @@ import { useAudio } from './AudioProvider';
 export function AudioControl() {
   const { sfxEnabled, musicPlaying, trackIndex, hasMusic, toggleSfx, toggleMusic, nextTrack } =
     useAudio();
+  const t = useT(chromeDict).audio;
 
   const track = playlist[trackIndex];
+  // Each button names what pressing it will do, as its tooltip and to a screen reader.
+  const sfxLabel = sfxEnabled ? t.muteSfx : t.unmuteSfx;
+  const musicLabel = musicPlaying ? t.pauseMusic : t.playMusic;
 
   return (
     <div
@@ -28,7 +34,7 @@ export function AudioControl() {
         type="button"
         onClick={toggleSfx}
         aria-pressed={sfxEnabled}
-        title={sfxEnabled ? 'Mute interface sounds' : 'Unmute interface sounds'}
+        title={sfxLabel}
         className={cn(
           'grid size-8 place-items-center rounded-full transition-colors',
           sfxEnabled
@@ -37,9 +43,7 @@ export function AudioControl() {
         )}
       >
         {sfxEnabled ? <Volume2 className="size-3.5" /> : <VolumeX className="size-3.5" />}
-        <span className="sr-only">
-          {sfxEnabled ? 'Mute interface sounds' : 'Unmute interface sounds'}
-        </span>
+        <span className="sr-only">{sfxLabel}</span>
       </button>
 
       {hasMusic ? (
@@ -50,7 +54,7 @@ export function AudioControl() {
             type="button"
             onClick={toggleMusic}
             aria-pressed={musicPlaying}
-            title={musicPlaying ? 'Pause music' : 'Play background music'}
+            title={musicLabel}
             className={cn(
               'grid size-8 place-items-center rounded-full transition-colors',
               musicPlaying
@@ -59,9 +63,7 @@ export function AudioControl() {
             )}
           >
             {musicPlaying ? <Pause className="size-3.5" /> : <Music className="size-3.5" />}
-            <span className="sr-only">
-              {musicPlaying ? 'Pause music' : 'Play background music'}
-            </span>
+            <span className="sr-only">{musicLabel}</span>
           </button>
 
           {musicPlaying && track ? (
@@ -74,11 +76,11 @@ export function AudioControl() {
                 <button
                   type="button"
                   onClick={nextTrack}
-                  title="Next track"
+                  title={t.nextTrack}
                   className="grid size-8 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-white/[0.06] hover:text-foreground"
                 >
                   <SkipForward className="size-3.5" />
-                  <span className="sr-only">Next track</span>
+                  <span className="sr-only">{t.nextTrack}</span>
                 </button>
               ) : null}
             </>

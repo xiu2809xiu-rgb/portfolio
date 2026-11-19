@@ -6,12 +6,12 @@ import { Reveal } from '@/components/common/Reveal';
 import { CodeBlock } from '@/components/work/CodeBlock';
 import { ProjectGallery } from '@/components/work/ProjectGallery';
 import { ScrollStory } from '@/components/work/ScrollStory';
-import { getProject, projects } from '@/content/projects';
+import { projectsContent } from '@/content/localized/projects';
+import { projects as everyProject } from '@/content/projects';
+import { localizePath, ogLocale } from '@/i18n/config';
+import { workDict } from '@/i18n/dictionaries/work';
+import { getLocale, localizedAlternates, notFoundMetadata } from '@/i18n/server';
 import { absoluteUrl } from '@/lib/site';
-
-interface PageProps {
-  params: Promise<{ slug: string }>;
-}
 
 /*
   Every slug is known at build time, so each page is prerendered. An unknown
@@ -22,26 +22,32 @@ interface PageProps {
   `[lang]/not-found.tsx` instead — the site's own 404, in the reader's language.
 */
 
+/* Slugs are shared between languages, so the English list names every page. */
 export function generateStaticParams() {
-  return projects.map((project) => ({ slug: project.slug }));
+  return everyProject.map((project) => ({ slug: project.slug }));
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: PageProps<'/[lang]/work/[slug]'>): Promise<Metadata> {
   const { slug } = await params;
-  const project = getProject(slug);
-  if (!project) return { title: 'Not found' };
+  const locale = await getLocale();
+  const project = projectsContent[locale].getProject(slug);
+  if (!project) return notFoundMetadata(locale);
 
   const title = `${project.title} ${project.titleAccent}`;
+  const path = `/work/${project.slug}`;
 
   return {
     title,
     description: project.summary,
-    alternates: { canonical: `/work/${project.slug}` },
+    alternates: localizedAlternates(locale, path),
     openGraph: {
       title,
       description: project.summary,
       type: 'article',
-      url: absoluteUrl(`/work/${project.slug}`),
+      url: absoluteUrl(localizePath(locale, path)),
+      locale: ogLocale[locale],
       // No explicit image: the sibling opengraph-image route generates a card
       // per case study, and pointing at screenshots[0] crashed for the projects
       // that have no imagery yet.
@@ -49,10 +55,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export default async function ProjectPage({ params }: PageProps) {
+export default async function ProjectPage({ params }: PageProps<'/[lang]/work/[slug]'>) {
   const { slug } = await params;
+  const locale = await getLocale();
+  const { getProject, projects } = projectsContent[locale];
   const project = getProject(slug);
   if (!project) notFound();
+
+  const t = workDict[locale];
 
   const otherProject = projects.find((entry) => entry.slug !== project.slug);
   // Bound locally so the narrowing survives into the map callbacks below.
@@ -66,7 +76,7 @@ export default async function ProjectPage({ params }: PageProps) {
           className="group inline-flex items-center gap-2 font-mono text-xs uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeft className="size-4 transition-transform group-hover:-translate-x-0.5" />
-          All work
+          {t.caseStudy.allWork}
         </Link>
 
         <header className="mt-8 max-w-4xl">
@@ -83,7 +93,7 @@ export default async function ProjectPage({ params }: PageProps) {
             ) : null}
             <span className="inline-flex items-center gap-1.5 rounded-full border border-success/30 bg-success/10 px-2.5 py-0.5 font-mono text-[0.6rem] uppercase tracking-widest text-success">
               <span className="size-1.5 rounded-full bg-success" />
-              {project.status === 'completed' ? 'Completed' : 'In progress'}
+              {project.status === 'completed' ? t.status.completed : t.status.inProgress}
             </span>
           </div>
 
@@ -129,7 +139,7 @@ export default async function ProjectPage({ params }: PageProps) {
         {/* Features + stack */}
         <div className="mt-12 grid gap-10 lg:grid-cols-[1fr_18rem]">
           <Reveal>
-            <h2 className="eyebrow mb-4">What it does</h2>
+            <h2 className="eyebrow mb-4">{t.caseStudy.whatItDoes}</h2>
             <ul className="grid gap-2 sm:grid-cols-2">
               {project.features.map((feature) => (
                 <li
@@ -143,7 +153,7 @@ export default async function ProjectPage({ params }: PageProps) {
           </Reveal>
 
           <Reveal delay={0.1}>
-            <h2 className="eyebrow mb-4">Built with</h2>
+            <h2 className="eyebrow mb-4">{t.caseStudy.builtWith}</h2>
             <ul className="flex flex-wrap gap-1.5">
               {project.stack.map((tech) => (
                 <li
@@ -161,9 +171,9 @@ export default async function ProjectPage({ params }: PageProps) {
         {project.story?.length && project.screenshots.length ? (
           <section className="mt-20">
             <Reveal>
-              <h2 className="eyebrow mb-2">Walkthrough</h2>
+              <h2 className="eyebrow mb-2">{t.caseStudy.walkthrough}</h2>
               <p className="mb-10 max-w-xl text-sm text-muted-foreground">
-                Scroll to follow the build, screen by screen.
+                {t.caseStudy.walkthroughHint}
               </p>
             </Reveal>
             <ScrollStory screenshots={project.screenshots} beats={project.story} />
@@ -173,7 +183,7 @@ export default async function ProjectPage({ params }: PageProps) {
         {/* STAR case study */}
         <Reveal>
           <section className="mt-20">
-            <h2 className="eyebrow mb-6">The case study</h2>
+            <h2 className="eyebrow mb-6">{t.caseStudy.theCaseStudy}</h2>
             <div className="grid gap-4 lg:grid-cols-3">
               {project.caseStudy.map((section) => (
                 <div key={section.label} className="glass rounded-2xl p-6">
@@ -193,7 +203,7 @@ export default async function ProjectPage({ params }: PageProps) {
         {architecture ? (
         <Reveal>
           <section className="mt-16">
-            <h2 className="eyebrow mb-6">Architecture</h2>
+            <h2 className="eyebrow mb-6">{t.caseStudy.architecture}</h2>
             <div className="glass rounded-2xl p-6 sm:p-8">
               <ol className="flex flex-wrap items-center gap-3">
                 {architecture.flow.map((node, index) => (
@@ -221,7 +231,7 @@ export default async function ProjectPage({ params }: PageProps) {
         {project.code ? (
           <Reveal>
             <section className="mt-16">
-              <h2 className="eyebrow mb-6">A slice of the code</h2>
+              <h2 className="eyebrow mb-6">{t.caseStudy.code}</h2>
               <CodeBlock
                 filename={project.code.filename}
                 language={project.code.language}
@@ -235,11 +245,11 @@ export default async function ProjectPage({ params }: PageProps) {
         {project.video ? (
           <Reveal>
             <section className="mt-16">
-              <h2 className="eyebrow mb-6">Demo</h2>
+              <h2 className="eyebrow mb-6">{t.caseStudy.demo}</h2>
               <div className="aspect-video overflow-hidden rounded-2xl border border-hairline bg-black">
                 <iframe
                   src={project.video}
-                  title={`${project.title} ${project.titleAccent} demo`}
+                  title={t.caseStudy.demoTitle(`${project.title} ${project.titleAccent}`)}
                   allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                   loading="lazy"
@@ -255,7 +265,7 @@ export default async function ProjectPage({ params }: PageProps) {
           <section className="mt-16">
             <h2 className="mb-6 flex items-center gap-2 font-heading text-xl font-bold tracking-tight">
               <Lightbulb className="size-5 text-lime" />
-              What I took away
+              {t.caseStudy.takeaways}
             </h2>
             <ul className="space-y-3">
               {project.learnings.map((learning) => (
@@ -298,7 +308,7 @@ export default async function ProjectPage({ params }: PageProps) {
               href={`/work/${otherProject.slug}`}
               className="group ml-auto inline-flex items-center gap-2 font-mono text-xs uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground"
             >
-              Next: {otherProject.title} {otherProject.titleAccent}
+              {t.caseStudy.next(`${otherProject.title} ${otherProject.titleAccent}`)}
               <ArrowUpRight className="size-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
             </Link>
           ) : null}

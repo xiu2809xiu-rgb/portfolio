@@ -1,7 +1,19 @@
 import { ImageResponse } from 'next/og';
 import { profile } from '@/content/profile';
+import { locales } from '@/i18n/config';
 
 export const runtime = 'nodejs';
+
+/*
+  Without this the card is rendered on every request: an image route under a
+  dynamic segment is only prerendered if it says which values to prerender for.
+  The card is the same English design at both addresses for now — drawing
+  Chinese here needs a CJK font file shipped with the function.
+*/
+export function generateStaticParams() {
+  return locales.map((lang) => ({ lang }));
+}
+
 export const alt = `${profile.fullName} — ${profile.role}`;
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';

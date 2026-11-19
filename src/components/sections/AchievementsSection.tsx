@@ -1,6 +1,8 @@
 import { Reveal } from '@/components/common/Reveal';
 import { SectionHeading } from '@/components/common/SectionHeading';
-import { achievements, earlierExperience } from '@/content/resume';
+import { resumeContent } from '@/content/localized/resume';
+import { sectionsDict } from '@/i18n/dictionaries/sections';
+import { getLocale } from '@/i18n/server';
 import { AwardCard } from './AwardCard';
 
 /**
@@ -17,7 +19,10 @@ import { AwardCard } from './AwardCard';
  * objection that took them off the pitch page — so they are numbered instead,
  * which matches the mono idiom the rest of the site already uses.
  */
-export function AchievementsSection() {
+export async function AchievementsSection() {
+  const locale = await getLocale();
+  const t = sectionsDict[locale].achievements;
+  const { achievements, earlierExperience } = resumeContent[locale];
   const featured = achievements.find((entry) => entry.featured);
   const main = achievements.filter((entry) => !entry.minor && !entry.featured);
   const minor = achievements.filter((entry) => entry.minor);
@@ -25,11 +30,7 @@ export function AchievementsSection() {
   return (
     <section id="achievements" className="scroll-mt-24 py-20 md:py-28">
       <div className="wrap">
-        <SectionHeading
-          index="06"
-          title="Achievements"
-          description="Competitions, certifications, and the responsibilities I have been trusted with."
-        />
+        <SectionHeading index="06" title={t.title} description={t.description} />
 
         <div className="grid gap-12 lg:grid-cols-[22rem_1fr] lg:gap-16">
           {featured ? (
@@ -77,9 +78,14 @@ export function AchievementsSection() {
             <div className="mt-10 space-y-2 border-t border-hairline pt-6">
               {minor.map((entry) => (
                 <p key={entry.title} className="text-sm text-muted-foreground">
-                  <span className="text-foreground">{entry.title}</span>
-                  {' — '}
-                  {entry.organisation}. {entry.body}
+                  {t.minorEntry(
+                    (name) => (
+                      <span className="text-foreground">{name}</span>
+                    ),
+                    entry.title,
+                    entry.organisation,
+                    entry.body,
+                  )}
                 </p>
               ))}
               <p className="text-sm text-muted-foreground">{earlierExperience}</p>

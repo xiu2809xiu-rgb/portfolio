@@ -2,26 +2,25 @@
 
 import { Fragment } from 'react';
 import { Check } from 'lucide-react';
+import { bookingDict } from '@/i18n/dictionaries/booking';
+import { useT } from '@/i18n/LocaleProvider';
 import { cn } from '@/lib/utils';
 import type { BookingStep } from './types';
 
-const STEPS: { id: BookingStep; label: string }[] = [
-  { id: 'when', label: 'When' },
-  { id: 'details', label: 'Details' },
-  { id: 'done', label: 'Done' },
-];
+const STEPS: readonly BookingStep[] = ['when', 'details', 'done'];
 
 export function StepIndicator({ current }: { current: BookingStep }) {
-  const currentIndex = STEPS.findIndex((step) => step.id === current);
+  const t = useT(bookingDict).steps;
+  const currentIndex = STEPS.indexOf(current);
 
   return (
-    <ol className="flex items-center justify-center gap-2 sm:gap-3" aria-label="Booking progress">
+    <ol className="flex items-center justify-center gap-2 sm:gap-3" aria-label={t.progress}>
       {STEPS.map((step, index) => {
         const complete = index < currentIndex;
         const active = index === currentIndex;
 
         return (
-          <Fragment key={step.id}>
+          <Fragment key={step}>
             <li
               className="flex items-center gap-2"
               aria-current={active ? 'step' : undefined}
@@ -42,7 +41,7 @@ export function StepIndicator({ current }: { current: BookingStep }) {
                   active ? 'text-foreground' : 'text-muted-foreground',
                 )}
               >
-                {step.label}
+                {t.names[step]}
               </span>
             </li>
 

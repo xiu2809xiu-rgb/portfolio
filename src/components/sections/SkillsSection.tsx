@@ -1,6 +1,8 @@
 import { Reveal } from '@/components/common/Reveal';
 import { SectionHeading } from '@/components/common/SectionHeading';
-import { skillGroups } from '@/content/resume';
+import { resumeContent } from '@/content/localized/resume';
+import { sectionsDict } from '@/i18n/dictionaries/sections';
+import { getLocale } from '@/i18n/server';
 
 /**
  * Grouped technology list.
@@ -9,15 +11,15 @@ import { skillGroups } from '@/content/resume';
  * are unverifiable and needed a disclaimer that conceded as much. What each of
  * these was actually used for is in the case studies, which is a better answer.
  */
-export function SkillsSection() {
+export async function SkillsSection() {
+  const locale = await getLocale();
+  const t = sectionsDict[locale].skills;
+  const { skillGroups } = resumeContent[locale];
+
   return (
     <section id="skills" className="scroll-mt-24 py-20 md:py-28">
       <div className="wrap">
-        <SectionHeading
-          index="02"
-          title="Skills"
-          description="What I build with. Where each of these was actually used is in the case studies."
-        />
+        <SectionHeading index="02" title={t.title} description={t.description} />
 
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {skillGroups.map((group, index) => (

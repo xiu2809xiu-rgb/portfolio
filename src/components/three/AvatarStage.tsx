@@ -5,6 +5,8 @@ import { Canvas } from '@react-three/fiber';
 import { ContactShadows, Environment, PerspectiveCamera } from '@react-three/drei';
 import { Pause, Play } from 'lucide-react';
 import * as THREE from 'three';
+import { homeDict } from '@/i18n/dictionaries/home';
+import { useT } from '@/i18n/LocaleProvider';
 import { cn } from '@/lib/utils';
 import { AVATAR_CLIPS, DEFAULT_CLIP } from './avatarClips';
 import { AvatarModel } from './AvatarModel';
@@ -25,6 +27,7 @@ interface AvatarStageProps {
  * both fall back to a still photograph rather than an empty box.
  */
 export function AvatarStage({ className, controls = true }: AvatarStageProps) {
+  const t = useT(homeDict).avatar;
   const hostRef = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
   const [clip, setClip] = useState(DEFAULT_CLIP.track);
@@ -169,11 +172,7 @@ export function AvatarStage({ className, controls = true }: AvatarStageProps) {
 
         {!usable ? (
           <div className="absolute inset-0 grid place-items-center px-6 text-center">
-            <p className="font-mono text-xs text-muted-foreground">
-              3D preview needs WebGL.
-              <br />
-              Your browser or GPU has it switched off.
-            </p>
+            <p className="font-mono text-xs text-muted-foreground">{t.unavailable(<br />)}</p>
           </div>
         ) : null}
 
@@ -196,13 +195,13 @@ export function AvatarStage({ className, controls = true }: AvatarStageProps) {
         <div
           className="flex max-w-[22rem] flex-wrap items-center justify-center gap-1.5 sm:max-w-sm"
           role="group"
-          aria-label="Avatar animation"
+          aria-label={t.controlsLabel}
         >
           <button
             type="button"
             onClick={() => setAutoplay((value) => !value)}
             aria-pressed={autoplay}
-            title={autoplay ? 'Stop cycling through animations' : 'Cycle through animations'}
+            title={t.autoTitle(autoplay)}
             className={cn(
               'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-mono text-[0.65rem] uppercase tracking-widest transition-all',
               autoplay
@@ -211,7 +210,7 @@ export function AvatarStage({ className, controls = true }: AvatarStageProps) {
             )}
           >
             {autoplay ? <Pause className="size-3" /> : <Play className="size-3" />}
-            Auto
+            {t.auto}
           </button>
 
           {AVATAR_CLIPS.map((item) => (
@@ -227,7 +226,7 @@ export function AvatarStage({ className, controls = true }: AvatarStageProps) {
                   : 'border-hairline text-muted-foreground hover:border-lime/30 hover:text-foreground',
               )}
             >
-              {item.label}
+              {t.clips[item.id]}
             </button>
           ))}
         </div>

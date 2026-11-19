@@ -4,7 +4,14 @@ import { useState } from 'react';
 import { DateTime } from 'luxon';
 import { Calendar, Check, Copy, ExternalLink, Video } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+/*
+  The English profile, on purpose: it only feeds the calendar event a visitor
+  saves (the .ics file and the Google Calendar link), and calendar events stay
+  English — they are read by calendar apps and by Richie as much as the visitor.
+*/
 import { profile } from '@/content/profile';
+import { bookingDict } from '@/i18n/dictionaries/booking';
+import { useT } from '@/i18n/LocaleProvider';
 import { buildIcs, downloadIcs } from '@/lib/ics';
 import { cn } from '@/lib/utils';
 import type { BookingConfirmation } from './types';
@@ -24,14 +31,12 @@ export function Confirmation({
   viewerTimezone,
   onBookAnother,
 }: ConfirmationProps) {
+  const { confirmation: t, format } = useT(bookingDict);
   const [copied, setCopied] = useState(false);
 
   const start = DateTime.fromISO(confirmation.start);
-  const viewerLabel = start
-    .setZone(viewerTimezone)
-    .setLocale('en-US')
-    .toFormat("cccc d LLLL yyyy 'at' h:mm a");
-  const ownerLabel = start.setZone(ownerTimezone).setLocale('en-US').toFormat('h:mm a');
+  const viewerLabel = format.fullDateTime(start.setZone(viewerTimezone));
+  const ownerLabel = format.time(start.setZone(ownerTimezone));
 
   const copyReference = async () => {
     try {
@@ -66,10 +71,10 @@ export function Confirmation({
 
   /* The visitor's own timezone, so "by Tuesday 6pm" means their Tuesday. */
   const holdLabel = confirmation.holdExpiresAt
-    ? DateTime.fromISO(confirmation.holdExpiresAt)
-        .setZone(viewerTimezone)
-        .toFormat("cccc d LLLL 'at' h:mm a")
+    ? format.dateTime(DateTime.fromISO(confirmation.holdExpiresAt).setZone(viewerTimezone))
     : null;
+
+  const strong = (text: string) => <strong className="text-foreground">{text}</strong>;
 
   const googleCalendarUrl = (() => {
     const format = (iso: string) => DateTime.fromISO(iso).toUTC().toFormat("yyyyLLdd'T'HHmmss'Z'");
@@ -96,37 +101,32 @@ export function Confirmation({
         being reserved and a person having said yes.
       */}
       <h3 className="font-heading text-2xl font-extrabold tracking-tight sm:text-3xl">
-        Your slot is held
+        {t.heading}
       </h3>
 
       <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-muted-foreground">
-        Thanks {attendeeName.split(/\s+/)[0]} — I&rsquo;ve asked Richie about{' '}
-        {confirmation.duration} minutes on <strong className="text-foreground">{viewerLabel}</strong>
-        {viewerTimezone !== ownerTimezone ? ` (${ownerLabel} his time)` : ''}. Nobody else can take
-        that time while he decides.
+        {t.thanks(strong, {
+          name: attendeeName,
+          minutes: confirmation.duration,
+          when: viewerLabel,
+          ownerTime: viewerTimezone !== ownerTimezone ? ownerLabel : null,
+        })}
       </p>
 
       {confirmation.live ? (
         <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
-          He confirms each session himself, so you&rsquo;ll hear back either way
-          {holdLabel ? (
-            <>
-              {' '}by <strong className="text-foreground">{holdLabel}</strong>
-            </>
-          ) : null}
-          . The calendar invitation arrives once he says yes.
+          {t.hearBack(strong, holdLabel)}
         </p>
       ) : (
         <p className="mx-auto mt-3 max-w-md rounded-xl border border-warning/30 bg-warning/10 p-3 text-xs leading-relaxed text-warning">
-          Demo mode — the slot is held on this site, but no calendar invite was sent because
-          Google credentials are not configured yet.
+          {t.demo}
         </p>
       )}
 
       <div className="mx-auto mt-6 flex max-w-xs items-center justify-between gap-3 rounded-xl border border-hairline bg-white/[0.03] px-4 py-3">
         <div className="text-left">
           <p className="font-mono text-[0.6rem] uppercase tracking-widest text-muted-foreground">
-            Reference
+            {t.reference}
           </p>
           <p className="font-mono text-base font-bold text-lime">{confirmation.reference}</p>
         </div>
@@ -134,7 +134,7 @@ export function Confirmation({
           type="button"
           onClick={copyReference}
           className="grid size-9 place-items-center rounded-lg border border-hairline transition-colors hover:border-lime/40 hover:bg-lime/5"
-          aria-label="Copy reference"
+          aria-label={t.copyReference}
         >
           {copied ? (
             <Check className="size-4 text-lime" />
@@ -158,7 +158,7 @@ export function Confirmation({
       >
         <Button onClick={saveIcs} variant="outline" className="gap-2">
           <Calendar className="size-4" />
-          Download .ics
+          {t.downloadIcs}
         </Button>
 
         <a
@@ -171,7 +171,7 @@ export function Confirmation({
           )}
         >
           <ExternalLink className="size-4" />
-          Add to Google
+          {t.addToGoogle}
         </a>
 
         {confirmation.meetingUrl ? (
@@ -182,7 +182,7 @@ export function Confirmation({
             className="inline-flex h-9 items-center gap-2 rounded-md bg-lime px-4 text-sm font-medium text-black transition-colors hover:bg-lime/90"
           >
             <Video className="size-4" />
-            Join link
+            {t.join}
           </a>
         ) : null}
       </div>
@@ -192,7 +192,7 @@ export function Confirmation({
         onClick={onBookAnother}
         className="link-underline mt-8 font-mono text-xs uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground"
       >
-        Book another session
+        {t.bookAnother}
       </button>
     </div>
   );
