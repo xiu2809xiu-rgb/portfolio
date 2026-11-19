@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { profileContent } from '@/content/localized/profile';
 import { useT } from '@/i18n/LocaleProvider';
+import { markIntroSeen, shouldSkipIntro } from './intro-guard';
 
 /**
  * Brief branded entry curtain, shown once per session.
@@ -15,9 +16,11 @@ import { useT } from '@/i18n/LocaleProvider';
  * flash of brand and a slow one is never stuck behind it.
  *
  * The curtain renders in the server HTML so there is no gap before it covers the
- * page. Repeat visits and reduced-motion are handled by {@link introGuardScript},
- * which runs before first paint — deciding that in an effect would show the
- * curtain for a frame before removing it, which is worse than not having one.
+ * page. Repeat visits and reduced-motion are handled by `introGuardScript` in
+ * `./intro-guard`, which runs before first paint — deciding that in an effect
+ * would show the curtain for a frame before removing it, which is worse than not
+ * having one. That script lives in its own file, outside this client module, for
+ * a reason explained there.
  */
 export function EntrySequence() {
   const [visible, setVisible] = useState(true);
@@ -47,11 +50,7 @@ export function EntrySequence() {
       if (done) return;
       done = true;
       setVisible(false);
-      try {
-        sessionStorage.setItem('rk:intro-seen', '1');
-      } catch {
-        // Private mode can throw; the curtain simply shows again next time.
-      }
+      markIntroSeen();
     };
 
     // Whichever comes first: the document finishing, or the hard cap.
@@ -111,28 +110,3 @@ export function EntrySequence() {
     </AnimatePresence>
   );
 }
-
-/** The guard's question, askable from React. Must stay in step with the script below. */
-function shouldSkipIntro(): boolean {
-  try {
-    return (
-      sessionStorage.getItem('rk:intro-seen') === '1' ||
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    );
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Runs before first paint, in the document head.
- *
- * Marks the document so repeat visitors and reduced-motion visitors never see
- * the curtain at all — not even for the single frame it would take React to
- * hydrate and remove it. Same technique as a theme-flash guard.
- */
-export const introGuardScript = `(function(){try{
-var seen=sessionStorage.getItem('rk:intro-seen')==='1';
-var calm=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-if(seen||calm){document.documentElement.dataset.intro='skip';}
-}catch(e){}})();`;

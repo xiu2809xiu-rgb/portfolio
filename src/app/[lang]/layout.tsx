@@ -9,7 +9,8 @@ import { AudioControl } from '@/components/layout/AudioControl';
 import { AudioProvider } from '@/components/layout/AudioProvider';
 import { CommandPalette } from '@/components/layout/CommandPalette';
 import { CursorLayer } from '@/components/layout/CursorLayer';
-import { EntrySequence, introGuardScript } from '@/components/layout/EntrySequence';
+import { EntrySequence } from '@/components/layout/EntrySequence';
+import { introGuardScript } from '@/components/layout/intro-guard';
 import { ScrollProgress } from '@/components/layout/ScrollProgress';
 import { profileContent } from '@/content/localized/profile';
 import { projectsContent } from '@/content/localized/projects';
@@ -166,7 +167,11 @@ export default async function RootLayout({ children, params }: LayoutProps<'/[la
       suppressHydrationWarning
     >
       <head>
-        {/* Must run before first paint — see EntrySequence. */}
+        {/*
+          Must run before first paint — see EntrySequence. The string has to
+          come from a plain module, never a 'use client' one: intro-guard.ts
+          explains what goes wrong in here otherwise.
+        */}
         <script dangerouslySetInnerHTML={{ __html: introGuardScript }} />
       </head>
       <body className="grain min-h-dvh bg-background text-foreground antialiased">
