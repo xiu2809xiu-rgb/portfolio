@@ -11,7 +11,6 @@ import type { Locale } from '@/i18n/config';
 import { commonDict } from '@/i18n/dictionaries/common';
 import { homeDict } from '@/i18n/dictionaries/home';
 import { useLocale, useT } from '@/i18n/LocaleProvider';
-import { cn } from '@/lib/utils';
 import { RotatingWord } from './RotatingWord';
 
 /* Both are WebGL-heavy and useless during SSR, so they load on the client only. */
@@ -32,10 +31,6 @@ const AvatarStage = dynamic(
 interface HeroSetting {
   /** Size, leading and tracking of the headline. */
   headline: string;
-  /** How StaggeredText cuts each line into pieces for the entrance. */
-  segmentBy: 'words' | 'chars';
-  /** Added to each headline line. */
-  line: string;
   /** The element that sets the hackathon apart in the sentence under the headline. */
   accent: string;
 }
@@ -48,10 +43,13 @@ interface HeroSetting {
   and, cut a character at a time, the overflow can strand a comma on a line of
   its own — while at 0.95 the lines touch.
 
-  It enters a character at a time, having no spaces to split on, and its lines
-  are put back into ordinary text flow: StaggeredText lays a single line out as
-  a flex row, which would make every character a block of its own, read aloud
-  one at a time and copied one per line.
+  Both languages enter a phrase at a time. Splitting Chinese by character was
+  tried, and it broke in a way that is easy to miss: the last line is painted
+  with `background-clip: text`, and Chromium only carries that clip through to
+  the pieces while the line is the flex row StaggeredText builds for words. Put
+  back into text flow as one inline-block per character, the line painted
+  nothing at all — half the headline was simply missing. Chinese has spaces
+  around its Latin words, so "words" cuts 也做 UX 设计 into three sensible pieces.
 
   Its accent is colour alone. Chinese has no italic, and a Song face dropped into
   a sans sentence reads as a font that failed to load rather than as emphasis.
@@ -59,14 +57,10 @@ interface HeroSetting {
 const SETTING: Record<Locale, HeroSetting> = {
   en: {
     headline: 'text-[clamp(2.5rem,9vw,5.5rem)] leading-[0.95] tracking-[-0.03em]',
-    segmentBy: 'words',
-    line: '',
     accent: 'font-serif text-foreground',
   },
   zh: {
     headline: 'text-[clamp(2.25rem,7.5vw,4.25rem)] leading-[1.15]',
-    segmentBy: 'chars',
-    line: 'block!',
     accent: 'not-italic text-foreground',
   },
 };
@@ -138,8 +132,8 @@ export function HeroSection() {
                 key={line}
                 text={line}
                 as="span"
-                className={cn(lineTone(index, t.headline.length), setting.line)}
-                segmentBy={setting.segmentBy}
+                className={lineTone(index, t.headline.length)}
+                segmentBy="words"
                 delay={LINE_DELAYS[index]}
                 duration={0.8}
                 direction="bottom"

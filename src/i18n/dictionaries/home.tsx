@@ -94,7 +94,7 @@ const zh: typeof en = {
     headline: ['全栈开发者，', '也做 UX 设计'],
     intro: (specialism, accent) => (
       <>
-        在南洋理工学院修读资讯科技专业文凭，主修{specialism}。
+        在南洋理工学院修读资讯科技专业文凭，专攻{specialism}。
         {accent('2026 年 NYP × AWS 黑客松')}冠军。正在找 2027 年在新加坡的软件工程实习。
       </>
     ),

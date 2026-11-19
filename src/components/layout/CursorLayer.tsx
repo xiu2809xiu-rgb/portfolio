@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { usePathname } from 'next/navigation';
+import { useBarePathname } from '@/i18n/LocaleProvider';
 
 /**
  * The three-layer cursor from the original site, rebuilt for React.
@@ -36,7 +36,8 @@ const INTERACTIVE = 'a, button, [role="button"], input, textarea, select, summar
 const FULL_SCREEN_ROUTES = ['/drive', '/pitch'];
 
 export function CursorLayer() {
-  const pathname = usePathname();
+  // Without the language prefix, so `/zh/drive` is recognised as `/drive`.
+  const pathname = useBarePathname();
   const [enabled, setEnabled] = useState(false);
 
   const dotRef = useRef<HTMLDivElement>(null);
@@ -139,7 +140,7 @@ export function CursorLayer() {
     };
   }, [enabled]);
 
-  if (!enabled || FULL_SCREEN_ROUTES.some((route) => pathname?.startsWith(route))) return null;
+  if (!enabled || FULL_SCREEN_ROUTES.some((route) => pathname.startsWith(route))) return null;
 
   return (
     <>

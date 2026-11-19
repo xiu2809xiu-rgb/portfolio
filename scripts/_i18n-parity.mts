@@ -90,8 +90,8 @@ async function checkFolder(dir: string, pattern: RegExp, identity: boolean): Pro
   for (const name of readdirSync(dir).filter((file) => pattern.test(file))) {
     const file = path.posix.join(dir, name);
     try {
-      const module = (await import(pathToFileURL(path.resolve(file)).href)) as Record<string, unknown>;
-      for (const [exportName, value] of Object.entries(module)) {
+      const loaded = (await import(pathToFileURL(path.resolve(file)).href)) as Record<string, unknown>;
+      for (const [exportName, value] of Object.entries(loaded)) {
         if (!isPair(value)) continue;
         walk(`${file}:${exportName}`, value.en, value.zh, identity);
         count += 1;

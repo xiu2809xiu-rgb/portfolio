@@ -16,7 +16,7 @@ const en = {
   meta: {
     title: 'Blog',
     description:
-      'Notes on building things — scheduling correctness, 3D performance, and what university projects actually teach you.',
+      'Notes on building things — scheduling correctness, 3D performance, and what school projects actually teach you.',
   },
 
   index: {

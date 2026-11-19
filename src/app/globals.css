@@ -192,13 +192,18 @@
        font, a Chinese ellipsis sits on the baseline and a 破折号 comes out as
        two dashes with a gap. `CJK Punctuation` claims just those characters for
        the system Chinese font; everything else still falls to the stack.
+
+       The single quotes ‘ ’ are deliberately not claimed. On a Chinese page
+       U+2019 is far more often the apostrophe in an English name than a nested
+       quotation, and set in the Chinese font it opens a gap in the middle of
+       the word: Director’ s List.
   */
   @font-face {
     font-family: 'CJK Punctuation';
     src:
       local('PingFang SC'), local('PingFangSC-Regular'), local('Microsoft YaHei'),
       local('Noto Sans SC'), local('Noto Sans CJK SC'), local('Source Han Sans SC');
-    unicode-range: U+00B7, U+2014, U+2018-2019, U+201C-201D, U+2026;
+    unicode-range: U+00B7, U+2014, U+201C-201D, U+2026;
   }
 
   html:lang(zh-Hans) {

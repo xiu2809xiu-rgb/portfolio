@@ -38,6 +38,29 @@ export const ogLocale: Record<Locale, string> = { en: 'en_SG', zh: 'zh_CN' };
 /** For `Intl` and `toLocaleDateString`. Singapore conventions in both. */
 export const intlLocale: Record<Locale, string> = { en: 'en-SG', zh: 'zh-SG' };
 
+/**
+ * A Chinese calendar date as this site writes it: `2026 年 11 月 20 日`.
+ *
+ * Written out by hand instead of asking `Intl`, for two reasons. `Intl` sets the
+ * date solid — 2026年11月20日 — while every sentence on the Chinese site puts a
+ * thin gap between Han characters and digits, so a formatted date would be the
+ * one piece of text breaking the page's own rule. And `Intl` output belongs to
+ * whichever engine runs it: a date rendered on the server and again in a browser
+ * with different locale data is a hydration mismatch waiting for the right
+ * visitor. Three numbers and three characters cannot disagree with themselves.
+ *
+ * A part left out is skipped: `{ year, month }` gives `2026 年 11 月`.
+ */
+export function chineseDate(parts: { year?: number; month: number; day?: number }): string {
+  return [
+    parts.year === undefined ? '' : `${parts.year} 年`,
+    `${parts.month} 月`,
+    parts.day === undefined ? '' : `${parts.day} 日`,
+  ]
+    .filter(Boolean)
+    .join(' ');
+}
+
 /** Each language named in itself — the only honest label for a switcher. */
 export const localeLabel: Record<Locale, string> = { en: 'English', zh: '中文' };
 

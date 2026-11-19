@@ -64,7 +64,14 @@ export default async function ProjectPage({ params }: PageProps<'/[lang]/work/[s
 
   const t = workDict[locale];
 
-  const otherProject = projects.find((entry) => entry.slug !== project.slug);
+  /*
+    The one after this in the order /work lists them, wrapping at the end — so
+    following "Next" from any case study walks through all of them and comes back
+    round, rather than every page pointing at the first.
+  */
+  const position = projects.findIndex((entry) => entry.slug === project.slug);
+  const following = projects[(position + 1) % projects.length];
+  const otherProject = following && following.slug !== project.slug ? following : undefined;
   // Bound locally so the narrowing survives into the map callbacks below.
   const architecture = project.architecture;
 

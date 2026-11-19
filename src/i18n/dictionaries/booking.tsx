@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
-import { Info, type DateTime } from 'luxon';
+import type { DateTime } from 'luxon';
 import type { ApiError, ApiIssue, BookingStep, SlotState } from '@/components/booking/types';
-import { intlLocale, type Locale } from '../config';
+import { chineseDate, intlLocale, type Locale } from '../config';
 
 /**
  * Strings for /book: the page around the flow, the three steps, and every
@@ -16,7 +16,7 @@ import { intlLocale, type Locale } from '../config';
  *     Chinese page cannot show it, so it picks its own words by code, and by
  *     field for a form the server rejected.
  *   · Dates and times. Each language formats its own, so the Chinese page reads
- *     11月20日星期五 09:00 rather than an English date with Chinese around it.
+ *     11 月 20 日星期五 09:00 rather than an English date with Chinese around it.
  *   · How to address the visitor. English thanks them by first name; a Chinese
  *     name is not a first name followed by a surname.
  *
@@ -238,16 +238,40 @@ const en = {
 
 const ZH = intlLocale.zh;
 
-/** Chinese schedules are written on a 24-hour clock. zh-SG on its own would print 下午2:30. */
-const CLOCK = { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' } as const;
-const DAY = { month: 'long', day: 'numeric', weekday: 'long' } as const;
+/*
+  Chinese dates and times are assembled here from numbers, not asked of `Intl`.
+  The calendar's month and its day names are in the server's HTML and rendered
+  again in the browser; the two must produce the same characters, and `Intl`
+  only promises that when both sides carry the same locale data. `chineseDate`
+  says the rest.
+*/
+
+/** Indexed by luxon's weekday, which counts from Monday as 1. */
+const ZH_WEEKDAYS = ['星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期日'];
+
+/** 11 月 20 日星期五 */
+const zhDay = (day: DateTime): string =>
+  `${chineseDate({ month: day.month, day: day.day })}${ZH_WEEKDAYS[day.weekday - 1]}`;
+
+/** Chinese schedules are written on a 24-hour clock: 14:30, not 下午2:30. */
+const zhClock = (at: DateTime): string => at.setLocale(EN).toFormat('HH:mm');
+
+/**
+ * The one zone named on the server as well as in the browser — Richie's, in the
+ * line under the calendar — so its name is fixed here rather than looked up.
+ */
+const ZH_ZONE_NAMES: Record<string, string> = { 'Asia/Singapore': '新加坡标准时间' };
 
 /**
  * A zone's Chinese name — 新加坡标准时间, 英国时间, 北美东部时间. The generic
  * name rather than the seasonal one, so a footnote does not change its wording
- * when daylight saving starts. Falls back to the id for a zone Intl does not know.
+ * when daylight saving starts. A visitor's own zone is only ever named in the
+ * browser, so `Intl` is safe to ask there. Falls back to the id for a zone it
+ * does not know.
  */
 function zoneName(zone: string): string {
+  const fixed = ZH_ZONE_NAMES[zone];
+  if (fixed) return fixed;
   try {
     const formatter = new Intl.DateTimeFormat(ZH, { timeZone: zone, timeZoneName: 'longGeneric' });
     const name = formatter.formatToParts(new Date()).find((part) => part.type === 'timeZoneName');
@@ -256,9 +280,6 @@ function zoneName(zone: string): string {
     return zone;
   }
 }
-
-/** Monday-first, as Intl lists them, turned to start on Sunday like the grid. */
-const weekdaysFromSunday = (mondayFirst: string[]) => [mondayFirst[6], ...mondayFirst.slice(0, 6)];
 
 const zhInvalidRequest = '有些信息没填对，请检查后再提交。';
 
@@ -370,7 +391,7 @@ const zh: typeof en = {
     topicPlaceholder: '实习机会',
     topics: ['实习机会', '项目合作', '代码评审', '随便聊聊'],
     noteLabel: '有什么想让我先看看的吗？',
-    notePlaceholder: '可以是一个链接、一些背景，或者你想问的问题。',
+    notePlaceholder: '可以是链接、背景说明，或者你想问的问题。',
     honeypot: '公司（请留空）',
     back: '换个时间',
     submitting: '提交中……',
@@ -393,7 +414,7 @@ const zh: typeof en = {
     */
     thanks: (strong, { name, minutes, when, ownerTime }) => (
       <>
-        谢谢你，{name.trim()}。我已经替你向 Richie 申请了 {minutes} 分钟，时间是 {strong(when)}
+        谢谢你，{name.trim()}。已经替你向 Richie 申请了 {minutes} 分钟，时间是 {strong(when)}
         {ownerTime ? `（他那边是 ${ownerTime}）` : ''}。在他答复之前，这个时间别人约不走。
       </>
     ),
@@ -433,7 +454,7 @@ const zh: typeof en = {
         case 'slot_already_booked':
           return '这个时段刚被别人约走了，请换一个时间再试。';
         case 'calendar_unavailable':
-          return '暂时连不上我的日历，这次没能提交成功。请过一会儿再试，或者直接发邮件给我。';
+          return '暂时连不上我的日历，这次没能提交成功。请稍后再试，或者直接发邮件给我。';
         default:
           return '预约没能完成，请再试一次。';
       }
@@ -442,13 +463,14 @@ const zh: typeof en = {
   },
 
   format: {
-    monthTitle: (month) => month.setLocale(ZH).toLocaleString({ year: 'numeric', month: 'long' }),
-    weekdayInitials: weekdaysFromSunday(Info.weekdays('narrow', { locale: ZH })),
-    dayName: (day) => day.setLocale(ZH).toLocaleString(DAY),
-    dayHeading: (day) => day.setLocale(ZH).toLocaleString(DAY),
-    time: (at) => at.setLocale(ZH).toLocaleString(CLOCK),
-    dateTime: (at) => at.setLocale(ZH).toLocaleString({ ...DAY, ...CLOCK }),
-    fullDateTime: (at) => at.setLocale(ZH).toLocaleString({ year: 'numeric', ...DAY, ...CLOCK }),
+    monthTitle: (month) => chineseDate({ year: month.year, month: month.month }),
+    /* Sunday first, as the grid is laid out. */
+    weekdayInitials: ['日', '一', '二', '三', '四', '五', '六'],
+    dayName: zhDay,
+    dayHeading: zhDay,
+    time: zhClock,
+    dateTime: (at) => `${zhDay(at)} ${zhClock(at)}`,
+    fullDateTime: (at) => `${at.year} 年 ${zhDay(at)} ${zhClock(at)}`,
     zoneShort: zoneName,
     zoneFull: zoneName,
   },

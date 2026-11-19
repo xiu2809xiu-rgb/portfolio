@@ -20,10 +20,13 @@ export default async function Image({ params }: { params: Promise<{ slug: string
     return new ImageResponse(<OgCard eyebrow="Case study" title="Not found" />, size);
   }
 
+  // On a share card a placing says more than a date; without one, the dates.
+  const detail = project.award ?? project.term;
+
   return new ImageResponse(
     (
       <OgCard
-        eyebrow={`Case study · ${project.term}`}
+        eyebrow={detail ? `Case study · ${detail}` : 'Case study'}
         title={`${project.title} ${project.titleAccent}`}
         description={project.summary}
         meta={project.stack.slice(0, 4).join('  ·  ')}

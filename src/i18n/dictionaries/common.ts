@@ -118,12 +118,12 @@ const zh: typeof en = {
       'Next.js',
       'SmartRecap',
     ],
-    rssTitle: (fullName) => `${fullName} — 文章`,
+    rssTitle: (fullName) => `${fullName} 的文章`,
     manifestDescription: '作品集、项目案例、技术文章，还有一份可以直接预约的日历。',
   },
 
   header: {
-    homeAria: (fullName) => `${fullName} — 回到首页`,
+    homeAria: (fullName) => `${fullName}，回到首页`,
     rebuild: '重启本站',
     openMenu: '打开菜单',
     closeMenu: '关闭菜单',

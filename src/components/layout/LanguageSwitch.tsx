@@ -35,6 +35,14 @@ export function LanguageSwitch({ className }: { className?: string }) {
       href={pathname}
       locale={target}
       scroll={false}
+      /*
+        Not prefetched. Left on, every reader would download the other
+        language's copy of every page they open, for a link very few of them
+        press. And on a 404 the other version does not exist either: that
+        prefetch goes through the rewrite into the catch-all route, where it was
+        observed to stay open and never complete.
+      */
+      prefetch={false}
       hrefLang={htmlLang[target]}
       lang={htmlLang[target]}
       aria-label={t.aria}

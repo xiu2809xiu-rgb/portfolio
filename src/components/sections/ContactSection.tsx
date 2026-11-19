@@ -25,10 +25,12 @@ export function ContactSection() {
   /*
     The light serif italic is a Latin flourish. Chinese has no italic and its
     serif is a different design altogether, so there the accent is carried by
-    the colour alone, as in the hero.
+    the colour alone, as in the hero. It is also kept in one piece: Chinese may
+    break between any two characters, and left to itself the heading wrapped
+    as 一起做点了不起的 / 东西, stranding the noun.
   */
   const accent =
-    locale === 'zh' ? 'text-lime' : 'font-serif font-light italic text-lime';
+    locale === 'zh' ? 'inline-block text-lime' : 'font-serif font-light italic text-lime';
 
   return (
     <section id="contact" className="relative scroll-mt-24 overflow-hidden py-24 md:py-32">

@@ -274,7 +274,9 @@ export function SiteHeader({ commandPalette }: { commandPalette?: ReactNode }) {
           {t.bookSession}
         </Link>
 
-        <div className="mt-auto pt-8 font-mono text-xs text-muted-foreground">
+        {/* The bottom padding lifts this line clear of the audio control, which
+            floats over the same corner and was covering the start of it. */}
+        <div className="mt-auto pb-14 pt-8 font-mono text-xs text-muted-foreground">
           {profile.location} · {profile.email}
         </div>
       </div>

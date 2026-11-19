@@ -1,7 +1,7 @@
 import { readFile, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import matter from 'gray-matter';
-import { defaultLocale, intlLocale, type Locale } from '@/i18n/config';
+import { chineseDate, defaultLocale, intlLocale, type Locale } from '@/i18n/config';
 
 export interface PostFrontmatter {
   title: string;
@@ -157,10 +157,19 @@ export async function getAllTags(locale: Locale = defaultLocale): Promise<string
   return [...new Set(posts.flatMap((post) => post.tags))].sort();
 }
 
-export const formatPostDate = (iso: string, locale: Locale = defaultLocale) =>
-  new Date(iso).toLocaleDateString(intlLocale[locale], {
+export const formatPostDate = (iso: string, locale: Locale = defaultLocale): string => {
+  const date = new Date(iso);
+  if (locale === 'zh') {
+    return chineseDate({
+      year: date.getUTCFullYear(),
+      month: date.getUTCMonth() + 1,
+      day: date.getUTCDate(),
+    });
+  }
+  return date.toLocaleDateString(intlLocale[locale], {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
     timeZone: 'UTC',
   });
+};

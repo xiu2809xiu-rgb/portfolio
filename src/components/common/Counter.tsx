@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { intlLocale, type Locale } from '@/i18n/config';
+import { intlLocale } from '@/i18n/config';
 import { useLocale } from '@/i18n/LocaleProvider';
 import { useStillness } from '@/lib/use-stillness';
 
@@ -13,14 +13,12 @@ interface CounterProps {
 }
 
 /*
-  Chinese typesetting leaves an integer of four digits or fewer ungrouped
-  (GB/T 15835), which is what `min2` does: 2028 stays 2028 and 12345 still
-  becomes 12,345. English keeps the grouping it has always had.
+  An integer of four digits or fewer is left ungrouped, which is what `min2`
+  does: 2028 stays 2028 and 12345 still becomes 12,345. Chinese typesetting asks
+  for exactly this (GB/T 15835), and in English it is what a year needs — the
+  graduation year used to render as "2,028", which reads as a quantity.
 */
-const GROUPING: Record<Locale, Intl.NumberFormatOptions> = {
-  en: {},
-  zh: { useGrouping: 'min2' },
-};
+const GROUPING: Intl.NumberFormatOptions = { useGrouping: 'min2' };
 
 /**
  * Counts up to `value` the first time it scrolls into view.
@@ -80,7 +78,7 @@ export function Counter({ value, suffix = '', durationMs = 1600, className }: Co
 
   return (
     <span ref={ref} className={className}>
-      {display.toLocaleString(intlLocale[locale], GROUPING[locale])}
+      {display.toLocaleString(intlLocale[locale], GROUPING)}
       {suffix}
     </span>
   );

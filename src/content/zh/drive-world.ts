@@ -43,11 +43,11 @@ export const districts: readonly District[] = [
     ...base('workshop'),
     name: 'Singink 与 SwapLah',
     kicker: 'Flask、工单、用户管理',
-    blurb: '12 个路由，6 张表，15 条校验规则——都在服务器端，在那儿才算数。',
+    blurb: '12 个路由，6 张表，15 条校验规则——都在服务器端，在那里才算数。',
   },
   {
     ...base('court'),
-    name: '乒乓球 CCA',
+    name: '乒乓球社团',
     kicker: '从线框图到能用的成品',
     blurb: '这个社团原本只活在群聊里，现在有了自己的家。',
   },
