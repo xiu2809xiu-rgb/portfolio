@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
+import { Link } from '@/i18n/Link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, Clock } from 'lucide-react';
 import { MdxContent } from '@/components/blog/MdxContent';
@@ -11,11 +11,14 @@ interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
-/**
- * Every slug is known at build time, so the route is fully static and an
- * unknown slug 404s from the edge instead of waking a function to say no.
- */
-export const dynamicParams = false;
+/*
+  Every slug is known at build time, so each page is prerendered. An unknown
+  slug is deliberately NOT refused at the routing layer with
+  `dynamicParams = false`: that hands the request to the framework's built-in
+  404, which has no layout to render in now that the root layout lives under
+  `[lang]`. Letting it reach `notFound()` below sends it to
+  `[lang]/not-found.tsx` instead — the site's own 404, in the reader's language.
+*/
 
 export async function generateStaticParams() {
   const posts = await getPosts();

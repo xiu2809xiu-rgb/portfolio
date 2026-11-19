@@ -17,7 +17,7 @@ import {
   type QualityId,
 } from '@/components/drive/quality';
 import dynamic from 'next/dynamic';
-import Link from 'next/link';
+import { Link } from '@/i18n/Link';
 import { ArrowLeft, TriangleAlert, Volume2, VolumeX } from 'lucide-react';
 import { useStillness } from '@/lib/use-stillness';
 import { cn } from '@/lib/utils';

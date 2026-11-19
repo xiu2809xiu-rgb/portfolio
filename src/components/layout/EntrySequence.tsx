@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { profile } from '@/content/profile';
+import { profileContent } from '@/content/localized/profile';
+import { useT } from '@/i18n/LocaleProvider';
 
 /**
  * Brief branded entry curtain, shown once per session.
@@ -20,13 +21,22 @@ import { profile } from '@/content/profile';
  */
 export function EntrySequence() {
   const [visible, setVisible] = useState(true);
+  const { profile } = useT(profileContent);
 
   useEffect(() => {
     const root = document.documentElement;
 
-    // The pre-paint guard already decided this visitor should not see it, and
-    // CSS has it hidden. Unmount on the next frame purely to get it out of the
-    // DOM — doing it synchronously here would just cost an extra render pass.
+    /*
+      Normally the pre-paint guard has already decided, and this only reads its
+      answer. The guard is an inline script, though, and inline scripts run only
+      when they arrive in the server's HTML — a 404 is drawn entirely by the
+      client, so there it never ran. Asking the same question again covers that
+      case; on every other page the two answers are identical.
+    */
+    if (root.dataset.intro !== 'skip' && shouldSkipIntro()) root.dataset.intro = 'skip';
+
+    // CSS has the curtain hidden. Unmount on the next frame purely to get it out
+    // of the DOM — doing it synchronously here would just cost an extra render.
     if (root.dataset.intro === 'skip') {
       const frame = requestAnimationFrame(() => setVisible(false));
       return () => cancelAnimationFrame(frame);
@@ -100,6 +110,18 @@ export function EntrySequence() {
       ) : null}
     </AnimatePresence>
   );
+}
+
+/** The guard's question, askable from React. Must stay in step with the script below. */
+function shouldSkipIntro(): boolean {
+  try {
+    return (
+      sessionStorage.getItem('rk:intro-seen') === '1' ||
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    );
+  } catch {
+    return false;
+  }
 }
 
 /**

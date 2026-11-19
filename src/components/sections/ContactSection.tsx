@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import { Link } from '@/i18n/Link';
 import { ArrowUpRight, Download } from 'lucide-react';
 import { Reveal } from '@/components/common/Reveal';
 import { profile } from '@/content/profile';

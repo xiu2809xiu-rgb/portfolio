@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import { Link } from '@/i18n/Link';
 import { ArrowUpRight, Car, Megaphone } from 'lucide-react';
 import { Reveal } from '@/components/common/Reveal';
 import { cn } from '@/lib/utils';

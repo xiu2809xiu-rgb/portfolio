@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
+import { Link } from '@/i18n/Link';
 import { Navigation } from 'lucide-react';
 import { districts, type District } from '@/content/drive-world';
 import type { CarHandle } from './Car';

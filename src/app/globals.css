@@ -17,10 +17,23 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
 
-  --font-sans: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-space-mono), ui-monospace, SFMono-Regular, monospace;
-  --font-heading: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
-  --font-serif: var(--font-crimson), Georgia, serif;
+  /*
+    Each stack has two hooks, `--font-lead` and `--font-cjk*`, that are only
+    defined on the Chinese site (see "Chinese typography" below). Undefined, they
+    fall back to a font that is already in the stack, so on the English site
+    these resolve to exactly the lists they have always been.
+  */
+  --font-sans:
+    var(--font-lead, var(--font-outfit)), var(--font-outfit), var(--font-cjk, ui-sans-serif),
+    ui-sans-serif, system-ui, sans-serif;
+  --font-mono:
+    var(--font-space-mono), var(--font-cjk, ui-monospace), ui-monospace, SFMono-Regular, monospace;
+  --font-heading:
+    var(--font-lead, var(--font-outfit)), var(--font-outfit), var(--font-cjk, ui-sans-serif),
+    ui-sans-serif, system-ui, sans-serif;
+  --font-serif:
+    var(--font-lead, var(--font-crimson)), var(--font-crimson), var(--font-cjk-serif, Georgia),
+    Georgia, serif;
 
   /* Brand ramp, exposed to Tailwind as text-lime / bg-aqua / border-ember etc. */
   --color-lime: var(--brand-lime);
@@ -159,6 +172,49 @@
     scroll-padding-top: 6rem;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+  }
+
+  /* ── Chinese typography ───────────────────────────────────────────────────
+     The three webfonts are Latin-only, so Chinese is set in the reader's own
+     system font — the one their eyes are already used to, at no download cost.
+     The stacks are named explicitly rather than left to `system-ui`, which on
+     Windows resolves to a font with no Chinese in it and lets the browser pick
+     a fallback that is sometimes the Japanese or Traditional design of a
+     character. The rules below exist because type set for Latin goes wrong in
+     specific ways when the same CSS is handed Chinese:
+
+     · Negative tracking tightens Latin headings and makes Chinese ones collide,
+       because every character is already a full square. Reset to none.
+     · Chinese has no italic. A browser asked for one slants the upright glyphs
+       mechanically, which is not a style any Chinese typeface has. Turning off
+       synthesis leaves real italics (the Latin serif) alone.
+     · “ ” — … share code points between the two scripts. Left to the Latin
+       font, a Chinese ellipsis sits on the baseline and a 破折号 comes out as
+       two dashes with a gap. `CJK Punctuation` claims just those characters for
+       the system Chinese font; everything else still falls to the stack.
+  */
+  @font-face {
+    font-family: 'CJK Punctuation';
+    src:
+      local('PingFang SC'), local('PingFangSC-Regular'), local('Microsoft YaHei'),
+      local('Noto Sans SC'), local('Noto Sans CJK SC'), local('Source Han Sans SC');
+    unicode-range: U+00B7, U+2014, U+2018-2019, U+201C-201D, U+2026;
+  }
+
+  html:lang(zh-Hans) {
+    --font-lead: 'CJK Punctuation';
+    --font-cjk:
+      'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', 'Noto Sans CJK SC',
+      'Source Han Sans SC', 'WenQuanYi Micro Hei';
+    --font-cjk-serif:
+      'Songti SC', 'Noto Serif SC', 'Noto Serif CJK SC', 'Source Han Serif SC', 'STSong', 'SimSun';
+
+    --tracking-tighter: 0em;
+    --tracking-tight: 0em;
+
+    font-synthesis: weight small-caps;
+    /* Keeps closing punctuation off the start of a line and opening off the end. */
+    line-break: strict;
   }
 
   body {
@@ -807,4 +863,11 @@
       transition-duration: 0.001ms;
     }
   }
+}
+
+/* Arbitrary negative tracking (`tracking-[-0.03em]`) is written into the class
+   name rather than read from a variable, so it needs its own reset for Chinese.
+   Unlayered, so it wins over the utility it is correcting. */
+:lang(zh-Hans) [class*='tracking-[-'] {
+  letter-spacing: 0;
 }

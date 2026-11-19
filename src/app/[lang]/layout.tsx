@@ -11,11 +11,14 @@ import { CommandPalette } from '@/components/layout/CommandPalette';
 import { CursorLayer } from '@/components/layout/CursorLayer';
 import { EntrySequence, introGuardScript } from '@/components/layout/EntrySequence';
 import { ScrollProgress } from '@/components/layout/ScrollProgress';
-import { profile } from '@/content/profile';
-import { projects } from '@/content/projects';
+import { profileContent } from '@/content/localized/profile';
+import { projectsContent } from '@/content/localized/projects';
+import { defaultLocale, htmlLang, isLocale, locales, localizePath } from '@/i18n/config';
+import { commonDict } from '@/i18n/dictionaries/common';
+import { LocaleProvider } from '@/i18n/LocaleProvider';
 import { getPosts } from '@/lib/blog';
-import { siteConfig, siteUrl } from '@/lib/site';
-import './globals.css';
+import { getSiteConfig, siteUrl } from '@/lib/site';
+import '../globals.css';
 
 /* Self-hosted by next/font — no render-blocking request to Google at runtime. */
 const outfit = Outfit({
@@ -39,49 +42,80 @@ const crimson = Crimson_Pro({
   display: 'swap',
 });
 
-export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
-  title: {
-    default: siteConfig.name,
-    template: `%s — ${profile.fullName}`,
-  },
-  description: siteConfig.description,
-  keywords: [...siteConfig.keywords],
-  authors: [{ name: profile.legalName, url: siteUrl }],
-  creator: profile.legalName,
-  openGraph: {
-    type: 'website',
-    locale: siteConfig.locale,
-    url: siteUrl,
-    siteName: profile.fullName,
-    title: siteConfig.name,
-    description: siteConfig.description,
-    images: [{ url: '/opengraph-image', width: 1200, height: 630, alt: siteConfig.name }],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: siteConfig.name,
-    description: siteConfig.description,
-    images: ['/opengraph-image'],
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: { index: true, follow: true, 'max-image-preview': 'large' },
-  },
-  icons: {
-    icon: [
-      { url: '/icon.svg', type: 'image/svg+xml' },
-      { url: '/favicon.ico', sizes: '48x48' },
-    ],
-    apple: '/apple-icon.png',
-  },
-  manifest: '/manifest.webmanifest',
-  alternates: {
-    canonical: '/',
-    types: { 'application/rss+xml': [{ url: '/blog/rss.xml', title: `${profile.fullName} — Writing` }] },
-  },
-};
+/*
+  One entry per language, so both trees are prerendered at build time. Anything
+  else in the `[lang]` position is rendered on demand and 404s.
+*/
+export function generateStaticParams() {
+  return locales.map((lang) => ({ lang }));
+}
+
+/**
+ * The root layout must not throw on an unknown language — there is no boundary
+ * above it to catch a `notFound()`. It falls back to English here, and the page
+ * underneath is what 404s, inside this layout's own chrome.
+ */
+const resolveLocale = (lang: string) => (isLocale(lang) ? lang : defaultLocale);
+
+export async function generateMetadata({ params }: LayoutProps<'/[lang]'>): Promise<Metadata> {
+  const locale = resolveLocale((await params).lang);
+  const site = getSiteConfig(locale);
+  const { profile } = profileContent[locale];
+  const shareImage = localizePath(locale, '/opengraph-image');
+
+  return {
+    metadataBase: new URL(siteUrl),
+    title: {
+      default: site.name,
+      template: `%s — ${profile.fullName}`,
+    },
+    description: site.description,
+    keywords: [...site.keywords],
+    authors: [{ name: profile.legalName, url: siteUrl }],
+    creator: profile.legalName,
+    openGraph: {
+      type: 'website',
+      locale: site.locale,
+      url: localizePath(locale, '/'),
+      siteName: profile.fullName,
+      title: site.name,
+      description: site.description,
+      images: [{ url: shareImage, width: 1200, height: 630, alt: site.name }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: site.name,
+      description: site.description,
+      images: [shareImage],
+    },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: { index: true, follow: true, 'max-image-preview': 'large' },
+    },
+    icons: {
+      icon: [
+        { url: '/icon.svg', type: 'image/svg+xml' },
+        { url: '/favicon.ico', sizes: '48x48' },
+      ],
+      apple: '/apple-icon.png',
+    },
+    manifest: localizePath(locale, '/manifest.webmanifest'),
+    /*
+      Only the feed here. Canonical and hreflang are set by each page for its
+      own path: metadata is inherited, so a canonical declared at the root would
+      be silently applied to every page that forgot to declare one, telling
+      search engines they are all the home page.
+    */
+    alternates: {
+      types: {
+        'application/rss+xml': [
+          { url: localizePath(locale, '/blog/rss.xml'), title: site.rssTitle },
+        ],
+      },
+    },
+  };
+}
 
 export const viewport: Viewport = {
   themeColor: '#05070a',
@@ -91,28 +125,33 @@ export const viewport: Viewport = {
   viewportFit: 'cover',
 };
 
-/** JSON-LD so search engines can read the person, not just the page. */
-const personSchema = {
-  '@context': 'https://schema.org',
-  '@type': 'Person',
-  name: profile.legalName,
-  alternateName: profile.fullName,
-  url: siteUrl,
-  image: `${siteUrl}${profile.photo}`,
-  jobTitle: profile.role,
-  email: `mailto:${profile.email}`,
-  address: { '@type': 'PostalAddress', addressLocality: profile.location },
-  alumniOf: { '@type': 'EducationalOrganization', name: 'Nanyang Polytechnic' },
-  knowsAbout: ['Web Development', 'Python', 'Flask', 'TypeScript', 'React', 'UX Design'],
-  sameAs: profile.socials.filter((social) => social.external).map((social) => social.href),
-};
-
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children, params }: LayoutProps<'/[lang]'>) {
+  const locale = resolveLocale((await params).lang);
+  const t = commonDict[locale];
+  const { profile } = profileContent[locale];
+  const { projects } = projectsContent[locale];
   // Loaded on the server so the palette has its corpus before it ever opens.
-  const posts = await getPosts();
+  const posts = await getPosts(locale);
+
+  /** JSON-LD so search engines can read the person, not just the page. */
+  const personSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Person',
+    name: profile.legalName,
+    alternateName: profile.fullName,
+    url: siteUrl,
+    image: `${siteUrl}${profile.photo}`,
+    jobTitle: profile.role,
+    email: `mailto:${profile.email}`,
+    address: { '@type': 'PostalAddress', addressLocality: profile.location },
+    alumniOf: { '@type': 'EducationalOrganization', name: 'Nanyang Polytechnic' },
+    knowsAbout: ['Web Development', 'Python', 'Flask', 'TypeScript', 'React', 'UX Design'],
+    sameAs: profile.socials.filter((social) => social.external).map((social) => social.href),
+  };
+
   return (
     <html
-      lang="en"
+      lang={htmlLang[locale]}
       className={`dark ${outfit.variable} ${spaceMono.variable} ${crimson.variable}`}
       suppressHydrationWarning
     >
@@ -139,9 +178,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           href="#main"
           className="sr-only rounded-md bg-lime px-4 py-2 font-mono text-sm text-black focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[200]"
         >
-          Skip to content
+          {t.skipToContent}
         </a>
 
+        <LocaleProvider locale={locale}>
         <AudioProvider>
         <EntrySequence />
         <ScrollProgress />
@@ -157,7 +197,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               posts={posts.map((post) => ({
                 slug: post.slug,
                 title: post.title,
-                subtitle: `${post.readingMinutes} min`,
+                subtitle: t.minutes(post.readingMinutes),
               }))}
             />
           }
@@ -167,9 +207,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           {children}
         </main>
 
-        <SiteFooter />
+        <SiteFooter locale={locale} />
         <AudioControl />
         </AudioProvider>
+        </LocaleProvider>
         {/* No richColors: it swaps in sonner's own semantic palette, which renders
             as a white card on this near-black page. The toast is themed in
             globals.css under .cn-toast instead. */}

@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import Link from 'next/link';
+import { Link } from '@/i18n/Link';
 import { ArrowRight, ArrowUpRight, Download } from 'lucide-react';
 import { motion } from 'motion/react';
 import { InViewMount } from '@/components/common/InViewMount';

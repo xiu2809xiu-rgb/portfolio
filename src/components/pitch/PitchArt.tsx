@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import { Link } from '@/i18n/Link';
 import { flyingWork } from '@/content/hard-sell';
 import { cn } from '@/lib/utils';
 

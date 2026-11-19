@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
-import Link from 'next/link';
+import { Link } from '@/i18n/Link';
 import { ArrowUpRight } from 'lucide-react';
 import { Reveal } from '@/components/common/Reveal';
 import { projects } from '@/content/projects';

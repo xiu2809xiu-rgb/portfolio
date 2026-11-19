@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
+import { Link } from '@/i18n/Link';
 import { ArrowUpRight, Clock } from 'lucide-react';
 import { Reveal } from '@/components/common/Reveal';
 import { formatPostDate, getPosts } from '@/lib/blog';

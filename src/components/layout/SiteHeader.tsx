@@ -1,12 +1,14 @@
 'use client';
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Car, Menu, X } from 'lucide-react';
-import { primaryNav } from '@/content/navigation';
-import { profile } from '@/content/profile';
+import { navigationContent } from '@/content/localized/navigation';
+import { profileContent } from '@/content/localized/profile';
+import { commonDict } from '@/i18n/dictionaries/common';
+import { Link } from '@/i18n/Link';
+import { useBarePathname, useT } from '@/i18n/LocaleProvider';
 import { useAudio } from './AudioProvider';
+import { LanguageSwitch } from './LanguageSwitch';
 import { RebootSequence } from './RebootSequence';
 import { cn } from '@/lib/utils';
 
@@ -25,8 +27,17 @@ export function SiteHeader({ commandPalette }: { commandPalette?: ReactNode }) {
   const [rebooting, setRebooting] = useState(false);
   // Bumped per run so RebootSequence remounts with fresh state.
   const [rebootRun, setRebootRun] = useState(0);
-  const pathname = usePathname();
+  /*
+    The path without its language prefix. English pages are served through a
+    rewrite, so the raw pathname is `/en/work` while prerendering and `/work` in
+    the browser — comparing against the bare one keeps the active link the same
+    in both, and lets every check below be written once for both languages.
+  */
+  const pathname = useBarePathname();
   const { sfxEnabled } = useAudio();
+  const t = useT(commonDict).header;
+  const { primaryNav } = useT(navigationContent);
+  const { profile } = useT(profileContent);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -128,7 +139,7 @@ export function SiteHeader({ commandPalette }: { commandPalette?: ReactNode }) {
                 setRebooting(true);
               }}
               className="group font-heading text-sm font-extrabold tracking-tight text-foreground transition-opacity hover:opacity-80 md:text-base"
-              title="Rebuild the site"
+              title={t.rebuild}
             >
               RICHIE<span className="text-lime group-hover:animate-pulse">.</span>KOH
             </button>
@@ -136,7 +147,7 @@ export function SiteHeader({ commandPalette }: { commandPalette?: ReactNode }) {
             <Link
               href="/"
               className="font-heading text-sm font-extrabold tracking-tight text-foreground md:text-base"
-              aria-label={`${profile.fullName} — home`}
+              aria-label={t.homeAria(profile.fullName)}
             >
               RICHIE<span className="text-lime">.</span>KOH
             </Link>
@@ -163,6 +174,8 @@ export function SiteHeader({ commandPalette }: { commandPalette?: ReactNode }) {
           <div className="flex items-center gap-2">
             {commandPalette}
 
+            <LanguageSwitch />
+
             {/*
               The driving world's main entrance.
 
@@ -182,7 +195,7 @@ export function SiteHeader({ commandPalette }: { commandPalette?: ReactNode }) {
               )}
             >
               <Car className="size-3.5 transition-transform group-hover:-translate-y-px" />
-              Drive
+              {t.drive}
             </Link>
 
             <Link
@@ -198,14 +211,14 @@ export function SiteHeader({ commandPalette }: { commandPalette?: ReactNode }) {
                 <span className="absolute inline-flex size-full animate-ping rounded-full bg-lime opacity-70" />
                 <span className="relative inline-flex size-1.5 rounded-full bg-lime" />
               </span>
-              Book me
+              {t.book}
             </Link>
 
             <button
               type="button"
               onClick={() => setOpen((value) => !value)}
               className="inline-flex size-10 items-center justify-center rounded-full border border-hairline text-foreground transition-colors hover:border-lime/40 lg:hidden"
-              aria-label={open ? 'Close menu' : 'Open menu'}
+              aria-label={open ? t.closeMenu : t.openMenu}
               aria-expanded={open}
               aria-controls="mobile-nav"
             >
@@ -245,10 +258,10 @@ export function SiteHeader({ commandPalette }: { commandPalette?: ReactNode }) {
         >
           <span>
             <span className="block font-heading text-lg font-semibold tracking-tight">
-              Take the car out
+              {t.driveCardTitle}
             </span>
             <span className="mt-0.5 block font-mono text-[0.6rem] uppercase tracking-[0.18em] text-muted-foreground">
-              A drivable world · loads only if you ask
+              {t.driveCardMeta}
             </span>
           </span>
           <Car className="size-5 shrink-0 text-aqua" />
@@ -258,7 +271,7 @@ export function SiteHeader({ commandPalette }: { commandPalette?: ReactNode }) {
           href="/book"
           className="mt-3 flex items-center justify-center gap-2 rounded-full bg-lime px-6 py-4 font-mono text-sm uppercase tracking-widest text-black"
         >
-          Book a session
+          {t.bookSession}
         </Link>
 
         <div className="mt-auto pt-8 font-mono text-xs text-muted-foreground">

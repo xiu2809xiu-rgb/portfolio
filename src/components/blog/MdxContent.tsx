@@ -1,5 +1,5 @@
 import { MDXRemote } from 'next-mdx-remote/rsc';
-import Link from 'next/link';
+import { Link } from '@/i18n/Link';
 import rehypeSlug from 'rehype-slug';
 import remarkGfm from 'remark-gfm';
 import type { ComponentPropsWithoutRef } from 'react';

@@ -1,4 +1,4 @@
-import type { Profile } from './types';
+import type { HeadlineStat, Profile } from './types';
 
 export const profile: Profile = {
   fullName: 'Richie Koh',
@@ -37,14 +37,14 @@ export const profile: Profile = {
  * roughly six words wraps to three lines and starts covering the model. Written
  * in first person, because it is the avatar saying them.
  */
-export const avatarThoughts = [
+export const avatarThoughts: readonly string[] = [
   'Open to 2027 internships 👀',
   'Ask me about SmartRecap',
   '1st place, NYP × AWS 2026',
   'This site is open source',
   'Drag the badge below ↓',
   'Built this from scratch',
-] as const;
+];
 
 /**
  * Cycles inside the hero sub-line.
@@ -52,13 +52,13 @@ export const avatarThoughts = [
  * The two halves of the same specialisation rather than adjectives, so the
  * sentence stays true on every frame.
  */
-export const heroRotation = ['Full-Stack Development', 'Digital UX Design'] as const;
+export const heroRotation: readonly string[] = ['Full-Stack Development', 'Digital UX Design'];
 
 /** Marquee strip under the hero. Drawn from what the case studies actually use. */
-export const marqueeTerms = [
+export const marqueeTerms: readonly string[] = [
   'REACT', 'NEXT.JS', 'TYPESCRIPT', 'PYTHON', 'FLASK', 'NODE.JS',
   'TAILWIND', 'POSTGRESQL', 'SQLITE', 'FIGMA', 'USABILITY TESTING', 'WEBGL', 'AWS',
-] as const;
+];
 
 /**
  * Headline numbers on the home page.
@@ -67,9 +67,9 @@ export const marqueeTerms = [
  * `projects.ts`, the distinct technologies listed across their stacks, and the
  * awards and certifications in `resume.ts`.
  */
-export const headlineStats = [
+export const headlineStats: readonly HeadlineStat[] = [
   { value: 5, suffix: '', label: 'Shipped projects' },
   { value: 20, suffix: '+', label: 'Technologies used' },
   { value: 6, suffix: '', label: 'Awards & certifications' },
   { value: 2028, suffix: '', label: 'Graduating' },
-] as const;
+];

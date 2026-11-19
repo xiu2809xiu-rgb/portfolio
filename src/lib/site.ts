@@ -1,4 +1,6 @@
-import { profile } from '@/content/profile';
+import { profileContent } from '@/content/localized/profile';
+import { ogLocale, type Locale } from '@/i18n/config';
+import { commonDict } from '@/i18n/dictionaries/common';
 
 /**
  * Canonical site URL.
@@ -15,27 +17,27 @@ export const siteUrl = (() => {
   return 'http://localhost:3000';
 })();
 
-export const siteConfig = {
-  name: `${profile.fullName} — ${profile.role}`,
-  shortName: profile.fullName,
-  description:
-    'Full-stack developer and UX designer at Nanyang Polytechnic. First place at the NYP × AWS Hackathon 2026. Case studies, writing, and a calendar you can book directly. Seeking a 2027 software engineering internship in Singapore.',
-  url: siteUrl,
-  locale: 'en_SG',
-  keywords: [
-    'Richie Koh',
-    'Koh Shan Shun',
-    'software developer portfolio',
-    'Nanyang Polytechnic',
-    'Singapore developer',
-    'Flask developer',
-    'Next.js portfolio',
-    'full-stack developer',
-    'UX design',
-    'software engineering internship',
-    'SmartRecap',
-  ],
-} as const;
+/**
+ * Site-level metadata, in the reader's language.
+ *
+ * A function of the locale rather than a constant: the name, description and
+ * keywords all appear in the document head, and a Chinese page announcing
+ * itself to a search engine in English would be indexed as the wrong thing.
+ */
+export function getSiteConfig(locale: Locale) {
+  const { profile } = profileContent[locale];
+  const t = commonDict[locale].site;
+
+  return {
+    name: t.name(profile.fullName, profile.role),
+    shortName: profile.fullName,
+    description: t.description,
+    url: siteUrl,
+    locale: ogLocale[locale],
+    keywords: t.keywords,
+    rssTitle: t.rssTitle(profile.fullName),
+  };
+}
 
 export const absoluteUrl = (path = '/') =>
   `${siteUrl}${path.startsWith('/') ? path : `/${path}`}`;

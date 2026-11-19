@@ -31,6 +31,13 @@ export interface Profile {
   readonly socials: readonly Link[];
 }
 
+/** One of the headline numbers under the hero. */
+export interface HeadlineStat {
+  readonly value: number;
+  readonly suffix: string;
+  readonly label: string;
+}
+
 export interface SkillGroup {
   readonly name: string;
   readonly icon: string;
